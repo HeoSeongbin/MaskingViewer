@@ -84,7 +84,7 @@ Phase 1: jsdom + Testing Library로 landmark, 미구현 안내 및 실제 테마
 - 렌더링은 전역 순차 큐로 한 번에 한 decode만 수행한다. 취소된 큐 작업은 실행 전에 폐기한다. active preview를 먼저 표시한 뒤 현재 페이지 주변 최대 7개 썸네일을 요청한다. 48MiB LRU canvas cache와 추가로 현재 UI가 참조하는 Canvas만 유지한다. cache eviction은 참조 제거로 처리하고 UI에서 아직 사용하는 Canvas를 0 크기로 바꾸지 않는다. 문서 닫기 후 도착한 결과는 0 크기로 해제하고 캐시에 재등록하지 않는다. 직전 결과를 큐 tail promise에 보관하지 않는다.
 - 입력 총량/픽셀/문서/페이지 한도는 PROGRESS.md에 명시했다. 실제 decoder 중간 버퍼와 브라우저 native 메모리까지 포함한 절대 heap 상한은 아니며 대용량 벤치마크는 Phase 6에 남아 있다. 원본 파일을 서버로 전송하는 코드가 없다.
 - PDF/TIFF는 lazy import, Konva viewer는 React.lazy로 분리했다. 초기 메인 bundle은 약 242KB이며 viewer/pdf 엔진은 필요한 시점에 로드한다.
-- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따른다. Phase 2 CI 실행은 npm ci 단계에서 실패했고, 아래 010의 수정을 e2bb583으로 푸시했다. 원격 재실행 결과는 미확인이다.
+- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따른다. Phase 2 CI 실행은 npm ci 단계에서 실패했고, 아래 010의 수정을 e2bb583으로 푸시했고 실행 38361812212의 성공을 확인했다. 이후 Phase 3 CI와 수정은 012에 기록한다.
 
 ## 010. CI 의존성 잠금 파일 복구 (2026-10-13)
 
@@ -107,3 +107,13 @@ GitHub 실행 38359540248은 npm ci에서 실패하여 나머지 검사와 배�
 - 색상 preview는 최대 1,800px 입력을 Worker에 transferable 사본으로 전달한다. 상태 변경/페이지 전환/문서 닫기 시 terminate 및 임시 Canvas 해제, 결과 signature 비교로 이전 결과를 폐기한다. 10초 timeout/실패 안내 후 색상 복원으로 재개할 수 있다. Worker API가 없는 raster 환경은 제한된 preview의 main-thread fallback을 사용하며 대용량 성능 보장은 아니다. TIFF의 Worker 필수 원칙은 유지한다.
 - 데스크톱은 viewport 높이에 맞춰 작업 영역을 배치하고 패널 내부에서 스크롤한다. 좁은 화면은 기존처럼 패널을 아래로 재배치하고 도구를 줄바꿈한다. 페이지별 수정 표시와 thumbnail은 미리보기이며 파일 저장 완료를 의미하지 않는다.
 - 검증: 단위 95개 및 production /MaskingViewer/의 Windows Edge E2E 15개. affine 64조합 왕복/방향/경계/역행렬/zoom, 색상 alpha/threshold, 이력 branching/한도/자원 상태 정리, HiDPI 실제 비대칭 픽셀, PDF 초기 회전·페이지 보존, TIFF preview/thumbnail 색상 일치, Worker 오류 복구/fallback 및 페이지 전환을 확인했다. 마스킹 생성/출력/보안, 다른 브라우저 및 대용량 성능은 후속 관문이다.
+
+## 012. Canvas paint를 기다리는 E2E 검사 (2026-10-13)
+
+Phase 3 CI(38367640034)는 E2E 6개 실패로 배포가 중단됐다. Chromium에서 원래 HiDPI 테스트의 flip 직후 픽셀 오류를 같은 위치에서 재현했다. Konva batchDraw는 requestAnimationFrame으로 실제 Canvas draw를 예약하며, React DOM의 준비 상태와 paint 시점은 다르다. aria-busy 또는 속성 상태만 확인한 뒤 즉시 픽셀을 읽던 테스트가 이전 frame/투명 Canvas를 읽었다.
+
+모든 TIFF 및 편집 픽셀 검사는 expect.poll로 정확한 기대 RGB/RGBA가 나타날 때까지 기다린다. 예상 색상/좌표/허용 오차를 바꾸거나 고정 sleep, 전체 테스트 retry, 테스트 삭제로 우회하지 않는다. 앱은 기존 비동기 batchDraw를 유지하여 상호작용마다 강제 동기 draw 비용을 추가하지 않는다.
+
+PLAYWRIGHT_CHANNEL=chromium은 OS와 관계없이 Playwright bundled Chromium 기본 실행기를 선택한다. 기본 Windows는 기존 Edge, Linux는 bundled Chromium이다. 이를 통해 Windows에서도 CI 엔진의 paint 타이밍을 재현할 수 있다. trace는 실패 때 유지하고 CI는 실패 시 test-results를 7일간 업로드한다. 진단 artifact의 실제 원격 업로드는 다음 실패 실행이 생겨야 확인할 수 있다.
+
+수정 후 Windows Chromium/Edge 각각 E2E 15개, 단위 95개, 타입/lint/production build가 통과했다. Linux 원격 재실행은 아직 하지 않았으며 로컬 Chromium 성공을 Linux 성공으로 기록하지 않는다. 의존성과 원본 좌표/색상 처리에는 변경이 없다.

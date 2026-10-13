@@ -7,7 +7,7 @@
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
 - 이번 작업은 Phase 3 문서 편집 및 좌표 변환 엔진을 구현했다. Phase 4–5 마스킹/출력 기능은 구현하지 않았다. 회전·반전의 필수 Undo/Redo 조건을 위해 페이지 편집 이력을 먼저 연결했다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3 구현·테스트·문서·스크린샷은 이번 커밋/푸시에 포함한다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. 이후 E2E 렌더 타이밍 수정은 로컬 검증을 완료했고 이번 커밋/푸시에 포함한다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
 
 ## Phase 1 — 완료
 
@@ -115,12 +115,12 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 | 브라우저 UI 회귀/테마 및 문서 로딩       | 확인                                                                                               |
 | 모바일 390px                             | 확인, 가로 넘침 없음                                                                               |
 | Production 서브경로 E2E                  | 15개 통과: 기존 입력/탐색 10개 + 복합 편집·HiDPI·색상·이력·이동·Worker 오류/fallback·TIFF 편집 5개 |
-| GitHub Actions 원격 실행/실제 Pages 배포 | Phase 2 실행은 npm ci 실패, 잠금 파일 복구 후 로컬 검증 완료. GitHub 재실행/배포는 미확인          |
+| GitHub Actions 원격 실행/실제 Pages 배포 | 잠금 파일 수정 실행은 성공. Phase 3은 E2E 6실패/9통과로 배포 건너뜀. 수정 후 원격 재실행 전        |
 | 문서 업로드/탐색                         | 자동 테스트 및 실제 화면 확인                                                                      |
 | 문서 편집                                | 좌표/상태/색상 단위 테스트 및 브라우저 실제 픽셀 검증 통과                                         |
 | 영구 마스킹 보안                         | 미구현, 미검증                                                                                     |
 
-단위 테스트: UI landmark/테마 회귀, 형식 판별, 크기 한도, TIFF 구조 손상, 페이지 상태, 업로드 취소/혼합 성공·실패, 캐시 eviction, 문서 닫기 이후 늦은 결과 폐기. 브라우저 E2E는 Windows Edge headless에서 실제 생성한 파일로 실행했다. TIFF grayscale fixture의 페이지별 픽셀 값과 orientation 6도 검사한다. CCITT fixture는 단순 white bilevel 패턴이며 복잡한 팩스 문서 코퍼스 검증은 남아 있다. 비밀번호 fixture는 암호 필요 안내를 위한 Standard Security Handler 문서이며 암호 해제 성공 검증은 아니다. 요청 검사로 테스트 PDF에서 외부 전송이 없음을 확인했다. Linux CI 실행은 아직 미검증이다.
+단위 테스트: UI landmark/테마 회귀, 형식 판별, 크기 한도, TIFF 구조 손상, 페이지 상태, 업로드 취소/혼합 성공·실패, 캐시 eviction, 문서 닫기 이후 늦은 결과 폐기. 브라우저 E2E는 Windows Edge headless에서 실제 생성한 파일로 실행했다. TIFF grayscale fixture의 페이지별 픽셀 값과 orientation 6도 검사한다. CCITT fixture는 단순 white bilevel 패턴이며 복잡한 팩스 문서 코퍼스 검증은 남아 있다. 비밀번호 fixture는 암호 필요 안내를 위한 Standard Security Handler 문서이며 암호 해제 성공 검증은 아니다. 요청 검사로 테스트 PDF에서 외부 전송이 없음을 확인했다. Linux CI의 Phase 3 실행은 E2E 6실패/9통과였다. 아래 012 결정에 따라 수정했으며 Windows의 공식 Chromium과 Edge에서 각각 15개를 통과했다. 수정 후 실제 Linux 재실행은 아직 미확인이다.
 
 Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 및 방향/zoom/clamp/화면 좌표, editStore.test.ts의 페이지 격리/이력/transaction/한도, colorTransform.test.ts의 alpha/grayscale/binary/밝기/대비다. 편집 E2E는 HiDPI 2배 비대칭 픽셀, 밝기·대비/복원/Undo, PDF 초기 회전·페이지별 이력, wheel 원본 좌표 유지·pan, Worker 실패 복구/fallback 및 TIFF thumbnail 일치를 확인했다. Worker timeout 경로 자체의 자동 테스트와 메모리 실측은 남아 있다.
 
@@ -128,7 +128,7 @@ Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 �
 
 ## 발견한 문제와 해결
 
-- Phase 2 푸시의 [Actions 실행](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38359540248)에서 npm ci 실패를 확인했다. 로컬에서도 EUSAGE와 @emnapi/core/runtime/wasi-threads 및 tslib 누락을 재현했다. 기존 node_modules와 잠금 파일 없이 새 lock을 생성해 복구했고 실제 npm ci부터 전체 검증을 다시 통과했다. 기존 설치 성공만으로 재현성을 확인한 검증 부족을 보완했다. 수정은 e2bb583으로 푸시했으며 GitHub 재실행 성공 여부는 미확인이다.
+- Phase 2 푸시의 [Actions 실행](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38359540248)에서 npm ci 실패를 확인했다. 로컬에서도 EUSAGE와 @emnapi/core/runtime/wasi-threads 및 tslib 누락을 재현했다. 기존 node_modules와 잠금 파일 없이 새 lock을 생성해 복구했고 실제 npm ci부터 전체 검증을 다시 통과했다. 기존 설치 성공만으로 재현성을 확인한 검증 부족을 보완했다. 수정은 e2bb583으로 푸시했고 Actions 실행 38361812212의 전체 성공을 확인했다.
 - Phase 3에서는 회전 후 좌우 반전이 화면의 상하 반전처럼 보일 수 있어 회전된 화면 기준 flip으로 순서를 확정하고 Konva local scale 축을 교환했다. 실제 비대칭 픽셀 테스트로 확인했다. brightness/contrast 뒤에 binary threshold를 적용하여 흑백 모드가 중간 회색으로 바뀌지 않도록 했다. 데스크톱은 도구가 늘어나도 뷰어가 viewport 안에 배치되도록 flex 높이를 조정했다.
 
 - npm 레지스트리 DNS 조회가 제한 환경에서 실패했다. 네트워크 권한을 통해 설치했다.
@@ -142,6 +142,18 @@ Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 �
 
 ## 알려진 제한과 진행 작업
 
-현재 진행 작업: 없음. 다음 우선순위는 Phase 4 원본 좌표 기반 사각형 마스킹 생성·선택·이동·크기 변경·삭제, 색상/목록/숨김, 기존 편집 이력에 마스킹 transaction 통합이다.
+현재 진행 작업: CI E2E 렌더 타이밍 수정 후 원격 재실행 확인. 이후 다음 우선순위는 Phase 4 원본 좌표 기반 사각형 마스킹 생성·선택·이동·크기 변경·삭제, 색상/목록/숨김, 기존 편집 이력에 마스킹 transaction 통합이다.
 
 테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력 인코더, PDF 출력 DPI, 브라우저별 큰 Canvas/메모리 한도 및 worker fallback은 후속 구현 전에 검증해야 한다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 대용량 성능이나 원본 마스킹 보안 완료를 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
+
+## CI E2E 오류 수정 (2026-10-13)
+
+[실패 실행 38367640034](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38367640034)의 npm ci, typecheck, lint, format, 단위 테스트, production build, Chromium 설치는 성공했다. E2E에서 TIFF 5코덱 페이지 이동과 HiDPI flip 검사 6개가 실패하고 9개는 통과했다. deploy는 건너뛰어졌다.
+
+공식 Playwright Chromium에서 수정 전 flip 테스트를 임시 복사본으로 실행하여 같은 위치에서 기대 red 대신 이전 blue 픽셀을 읽는 실패를 재현했다. 임시 파일은 검증 후 제거했다. Konva의 batchDraw가 다음 프레임에서 실행되므로 DOM의 aria-busy=false가 Canvas paint 완료를 뜻하지 않는다. 픽셀 기대값을 바꾸지 않고 expect.poll로 실제 결과가 그려질 때까지 검사한다.
+
+변경: e2e/documents.spec.ts, e2e/editing.spec.ts, playwright.config.ts, .github/workflows/pages.yml, README.md, docs/PROGRESS.md, docs/DECISIONS.md. 기존 앱 처리 로직과 의존성/잠금 파일은 변경하지 않았다. Chromium 선택 환경 변수, 실패 trace 보존 및 CI 진단 artifact(7일)를 추가했다.
+
+수정 후 검증: 타입/lint, 단위 95개, /MaskingViewer/ production build 통과. Windows 공식 Chromium 15개 및 Edge 15개 E2E 모두 통과. 수정 전 재현 실패는 성공 결과에 포함하지 않는다. 포맷 검사도 문서 갱신 후 통과했다. 실제 Linux 수정 후 실행/배포 및 진단 artifact 업로드는 푸시 후 확인해야 한다.
+
+별도 기본 pages build and deployment 실행도 동일 커밋에서 성공했지만 앱의 Validate and deploy Pages 성공과 구분한다. Pages 설정과 최종 제공 산출물의 검증은 여전히 남아 있다. checkout/setup-node의 Node 20 경고는 E2E 실패 원인이 아니다.

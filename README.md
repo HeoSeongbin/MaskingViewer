@@ -33,7 +33,7 @@ PDF.js의 폰트/CMap/WASM/ICC 자원은 predev/prebuild에서 설치된 패키�
 - TIFF는 classic strip 기반 무압축, CCITT G3/G4, LZW, Deflate, PackBits를 지원합니다. BigTIFF, tile, 16bit, planar-separated 및 JPEG-in-TIFF 등은 아직 지원하지 않습니다. 테스트한 fixture 범위 밖의 변형은 실패할 수 있습니다.
 - SVG/HEIC/AVIF/ICO는 미지원입니다. JPEG 크기 헤더는 첫 1MiB까지 검사하며 확인할 수 없는 파일은 거부합니다.
 - 썸네일은 현재 페이지 주변 최대 7개, 160px로 표시합니다. 화면 미리보기는 최대 1,800px이며 원본 출력 해상도를 뜻하지 않습니다.
-- 테마와 열린 파일은 새로고침 후 초기화됩니다. 테스트 브라우저는 Windows Edge이며 다른 브라우저와 대용량 코퍼스 검증은 남아 있습니다.
+- 테마와 열린 파일은 새로고침 후 초기화됩니다. 테스트 브라우저는 Windows Edge 및 Playwright Chromium이며 다른 브라우저와 대용량 코퍼스 검증은 남아 있습니다.
 
 ## 브라우저 자동 테스트
 
@@ -81,3 +81,13 @@ Phase 2에서 해당 production 서브경로로 실제 PDF/TIFF/이미지 및 wo
 좌표 확인 도구는 포인터의 정규화된 원본 좌표를 표시합니다. 원본 → 회전 → 화면 기준 반전 → 양수 경계 보정 → zoom/pan의 affine 행렬과 역행렬을 사용합니다. 일반 이미지/TIFF의 100%는 원본 픽셀당 CSS 1px이며 PDF는 초기 회전이 반영된 pt당 CSS 1px입니다. HiDPI backing buffer와 최대 1,800px 미리보기 해상도는 이 좌표와 별개입니다. PDF 출력 DPI와 실제 저장은 Phase 5에서 구현합니다.
 
 색상 처리는 취소 가능한 로컬 Worker에서 새 픽셀 사본에 적용하며 thumbnail도 같은 색상/기하 커널을 사용합니다. 처리 오류 시 색상 복원으로 재개할 수 있습니다. 확대해도 미리보기의 디코딩 해상도가 자동으로 높아지지는 않습니다.
+
+CI와 같은 bundled Chromium으로 Windows에서 브라우저 테스트를 실행할 수도 있습니다.
+
+```powershell
+npx playwright install chromium
+$env:PLAYWRIGHT_CHANNEL = 'chromium'
+npm run test:e2e
+```
+
+기본 Windows 실행기는 Edge이며 PLAYWRIGHT_CHANNEL=msedge로 명시할 수도 있습니다. Canvas 픽셀 검사는 Konva의 다음 프레임 그리기를 기다린 후 정확한 색상 값을 검사합니다. CI 실패 시 test-results artifact에서 스크린샷·오류 문맥·trace를 확인할 수 있습니다(7일 보관).

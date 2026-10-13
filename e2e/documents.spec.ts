@@ -101,16 +101,22 @@ for (const codec of [1, 3, 4, 5, 8, 32773])
           ).data;
         return Array.from(data);
       });
-    expect((await pixel())[0]).toBe(codec === 3 || codec === 4 ? 255 : 40);
+    await expect
+      .poll(async () => (await pixel())[0])
+      .toBe(codec === 3 || codec === 4 ? 255 : 40);
     await page.getByRole('button', { name: '다음 페이지' }).click();
     await expect(page.locator('.document-stage')).toHaveAttribute(
       'aria-busy',
       'false',
     );
-    expect((await pixel())[0]).toBe(codec === 3 || codec === 4 ? 255 : 140);
+    await expect
+      .poll(async () => (await pixel())[0])
+      .toBe(codec === 3 || codec === 4 ? 255 : 140);
     await page.getByRole('button', { name: '3페이지 선택' }).click();
     await expect(page.locator('.page-dimensions')).toContainText('30 × 40 px');
-    expect((await pixel())[0]).toBe(codec === 3 || codec === 4 ? 255 : 230);
+    await expect
+      .poll(async () => (await pixel())[0])
+      .toBe(codec === 3 || codec === 4 ? 255 : 230);
     await page.getByRole('button', { name: `pages-${codec}.tif 닫기` }).click();
     await expect(
       page.getByRole('heading', { name: /문서를 열고/ }),

@@ -43,35 +43,35 @@ test('compound geometry and worker colors produce expected asymmetric pixels at 
       },
       { x, y },
     );
-  expect(await sample(-25, -15)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(-25, -15)).toEqual([255, 0, 0, 255]);
   await page.getByRole('button', { name: '오른쪽 90°' }).click();
-  expect(await sample(15, -25)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(15, -25)).toEqual([255, 0, 0, 255]);
   await page.getByRole('button', { name: '좌우 반전', exact: true }).click();
-  expect(await sample(-15, -25)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(-15, -25)).toEqual([255, 0, 0, 255]);
   await page.getByRole('button', { name: '상하 반전', exact: true }).click();
-  expect(await sample(-15, 25)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(-15, 25)).toEqual([255, 0, 0, 255]);
   await page.getByRole('button', { name: '색상 반전', exact: true }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-15, 25)).toEqual([0, 255, 255, 255]);
+  await expect.poll(() => sample(-15, 25)).toEqual([0, 255, 255, 255]);
   await page.getByLabel('색상 모드', { exact: true }).selectOption('grayscale');
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-15, 25)).toEqual([201, 201, 201, 255]);
+  await expect.poll(() => sample(-15, 25)).toEqual([201, 201, 201, 255]);
   await page.getByLabel('색상 모드', { exact: true }).selectOption('binary');
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-15, 25)).toEqual([255, 255, 255, 255]);
+  await expect.poll(() => sample(-15, 25)).toEqual([255, 255, 255, 255]);
   await page.getByRole('button', { name: '전체 편집 복원' }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-25, -15)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(-25, -15)).toEqual([255, 0, 0, 255]);
   await page.getByLabel('밝기', { exact: true }).focus();
   await page.getByLabel('밝기', { exact: true }).press('Home');
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-25, -15)).toEqual([0, 0, 0, 255]);
+  await expect.poll(() => sample(-25, -15)).toEqual([0, 0, 0, 255]);
   await page.getByRole('button', { name: '실행 취소', exact: true }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-25, -15)).toEqual([255, 0, 0, 255]);
+  await expect.poll(() => sample(-25, -15)).toEqual([255, 0, 0, 255]);
   await page.getByLabel('대비', { exact: true }).press('Home');
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await sample(-25, -15)).toEqual([128, 128, 128, 255]);
+  await expect.poll(() => sample(-25, -15)).toEqual([128, 128, 128, 255]);
   await page.getByRole('button', { name: '색상 복원', exact: true }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
   expect(errors).toEqual([]);
@@ -253,25 +253,27 @@ test('TIFF color preview and thumbnail pixels agree and page switching cancels s
           1,
         ).data,
     );
-  expect(await stage.locator('canvas').evaluate(centerPixel)).toEqual([
-    215, 215, 215, 255,
-  ]);
-  expect(
-    await page
-      .getByRole('button', { name: '1페이지 선택' })
-      .locator('canvas')
-      .evaluate(centerPixel),
-  ).toEqual([215, 215, 215, 255]);
+  await expect
+    .poll(() => stage.locator('canvas').evaluate(centerPixel))
+    .toEqual([215, 215, 215, 255]);
+  await expect
+    .poll(() =>
+      page
+        .getByRole('button', { name: '1페이지 선택' })
+        .locator('canvas')
+        .evaluate(centerPixel),
+    )
+    .toEqual([215, 215, 215, 255]);
   await page.getByLabel('색상 모드', { exact: true }).selectOption('grayscale');
   await page.getByRole('button', { name: '다음 페이지' }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await stage.locator('canvas').evaluate(centerPixel)).toEqual([
-    140, 140, 140, 255,
-  ]);
+  await expect
+    .poll(() => stage.locator('canvas').evaluate(centerPixel))
+    .toEqual([140, 140, 140, 255]);
   await page.getByRole('button', { name: '1페이지 선택' }).click();
   await expect(stage).toHaveAttribute('aria-busy', 'false');
-  expect(await stage.locator('canvas').evaluate(centerPixel)).toEqual([
-    215, 215, 215, 255,
-  ]);
+  await expect
+    .poll(() => stage.locator('canvas').evaluate(centerPixel))
+    .toEqual([215, 215, 215, 255]);
   expect(errors).toEqual([]);
 });
