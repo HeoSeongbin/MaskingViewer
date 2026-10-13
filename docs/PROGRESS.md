@@ -7,7 +7,7 @@
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
 - Phase 1 기반 작업에 이어 이번 작업은 Phase 2 문서 업로드/탐색을 구현했다. Phase 3의 사용자 편집/좌표 엔진과 Phase 4–5 마스킹/출력 기능은 구현하지 않았다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 커밋 `6a2c3d8`은 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 2 구현, 테스트 및 문서를 함께 커밋/푸시하는 범위다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. 이후 CI 설치 오류 수정은 로컬 검증을 마쳤으며 이번 커밋/푸시에 포함한다. GitHub 재실행 결과는 별도로 확인한다.
 
 ## Phase 1 — 완료
 
@@ -88,7 +88,7 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 
 | 검사                                     | 결과                                                                                                  |
 | ---------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| 의존성 설치 및 npm ls                    | 성공, peer dependency 충돌 없음                                                                       |
+| 의존성 설치 및 npm ls                    | 깨끗한 npm ci 성공, Linux 대상 dry-run도 통과                                                         |
 | npm 보안 검사(최종 설치)                 | 0 vulnerabilities                                                                                     |
 | TypeScript typecheck                     | 통과                                                                                                  |
 | ESLint (max-warnings 0)                  | 통과                                                                                                  |
@@ -99,7 +99,7 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 | 브라우저 UI 회귀/테마 및 문서 로딩       | 확인                                                                                                  |
 | 모바일 390px                             | 확인, 가로 넘침 없음                                                                                  |
 | Production 서브경로 E2E                  | 10개 통과: 이미지 5종, PDF, TIFF 6코덱, 암호 안내, 오류, 파일 전환/닫기, 번호/썸네일 이동, DnD/모바일 |
-| GitHub Actions 원격 실행/실제 Pages 배포 | 미실행                                                                                                |
+| GitHub Actions 원격 실행/실제 Pages 배포 | Phase 2 실행은 npm ci 실패, 잠금 파일 복구 후 로컬 검증 완료. GitHub 재실행/배포는 미확인             |
 | 문서 업로드/탐색                         | 자동 테스트 및 실제 화면 확인                                                                         |
 | 편집/마스킹 보안                         | 미구현, 미검증                                                                                        |
 
@@ -108,6 +108,8 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 스크린샷: screenshots/phase-1.png, screenshots/phase-2.png. E2E 설정은 build base와 일치해야 하며 README의 명령 순서로 재현한다.
 
 ## 발견한 문제와 해결
+
+- Phase 2 푸시의 [Actions 실행](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38359540248)에서 npm ci 실패를 확인했다. 로컬에서도 EUSAGE와 @emnapi/core/runtime/wasi-threads 및 tslib 누락을 재현했다. 기존 node_modules와 잠금 파일 없이 새 lock을 생성해 복구했고 실제 npm ci부터 전체 검증을 다시 통과했다. 기존 설치 성공만으로 재현성을 확인한 검증 부족을 보완했다. 수정은 이번 커밋/푸시에 포함하며 GitHub 재실행 성공 여부는 미확인이다.
 
 - npm 레지스트리 DNS 조회가 제한 환경에서 실패했다. 네트워크 권한을 통해 설치했다.
 - 제한 환경에서 Vite/Vitest가 realpath EPERM으로 실패했다. 권한을 갖춘 환경에서 실제 재실행 후 통과했다. 최초 실패를 테스트 성공으로 계산하지 않았다.

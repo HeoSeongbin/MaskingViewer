@@ -84,4 +84,14 @@ Phase 1: jsdom + Testing Library로 landmark, 미구현 안내 및 실제 테마
 - 렌더링은 전역 순차 큐로 한 번에 한 decode만 수행한다. 취소된 큐 작업은 실행 전에 폐기한다. active preview를 먼저 표시한 뒤 현재 페이지 주변 최대 7개 썸네일을 요청한다. 48MiB LRU canvas cache와 추가로 현재 UI가 참조하는 Canvas만 유지한다. cache eviction은 참조 제거로 처리하고 UI에서 아직 사용하는 Canvas를 0 크기로 바꾸지 않는다. 문서 닫기 후 도착한 결과는 0 크기로 해제하고 캐시에 재등록하지 않는다. 직전 결과를 큐 tail promise에 보관하지 않는다.
 - 입력 총량/픽셀/문서/페이지 한도는 PROGRESS.md에 명시했다. 실제 decoder 중간 버퍼와 브라우저 native 메모리까지 포함한 절대 heap 상한은 아니며 대용량 벤치마크는 Phase 6에 남아 있다. 원본 파일을 서버로 전송하는 코드가 없다.
 - PDF/TIFF는 lazy import, Konva viewer는 React.lazy로 분리했다. 초기 메인 bundle은 약 242KB이며 viewer/pdf 엔진은 필요한 시점에 로드한다.
-- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따르며 실제 CI 실행은 아직 확인하지 않았다.
+- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따른다. Phase 2 CI 실행은 npm ci 단계에서 실패했고, 아래 010의 수정을 이번 커밋/푸시에 포함한다. 원격 재실행 결과는 미확인이다.
+
+## 010. CI 의존성 잠금 파일 복구 (2026-10-13)
+
+GitHub 실행 38359540248은 npm ci에서 실패하여 나머지 검사와 배포가 건너뛰어졌다. 로컬 npm ci --dry-run에서도 EUSAGE 및 @emnapi/core/runtime/wasi-threads, tslib 누락을 재현했다. 이전 npm install 성공만으로 깨끗한 설치의 재현성을 검증하지 못한 것이다.
+
+기존 node_modules 또는 불완전한 잠금 파일을 유지한 npm install --package-lock-only는 오류를 고치지 못했다. 별도 임시 폴더에 package.json만 복사하여 package-lock.json을 새로 생성한 뒤 교체했다. 다른 플랫폼의 optional/bundled 의존성 트리가 복구되었고 일부 하위 패키지 배치가 바뀌었다. 직접 의존성 선언은 유지했다. user-event의 허용 범위 내 패치 버전은 14.6.7에서 14.6.8로 변경되었다.
+
+실제 npm ci, Linux x64/glibc를 지정한 npm ci dry-run, 타입/lint/포맷, 23개 단위 테스트, production 서브경로 빌드 및 10개 Windows Edge E2E가 통과했다. Linux dry-run은 실제 Linux에서 빌드/브라우저를 실행했다는 의미가 아니다. GitHub 재실행 및 Pages 성공 여부는 푸시 후 별도로 확인해야 한다.
+
+앞으로 잠금 파일을 수정하면 npm install 결과와 별도로 npm ci를 검사한다. 설치 재현 실패를 우회하려고 CI를 npm install 또는 --legacy-peer-deps/--force로 바꾸지 않는다. Windows에서 native 모듈이 잠긴 경우 이 프로젝트의 Vite 서버만 종료한 뒤 설치 검증하고 다시 실행한다.
