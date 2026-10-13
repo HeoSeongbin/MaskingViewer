@@ -1,6 +1,7 @@
 import { loadDocument } from '../../core/document/DocumentLoader';
 import { pageRenderer } from '../../core/document/PageRenderer';
 import { useDocumentStore } from '../../stores/documentStore';
+import { useEditStore } from '../../stores/editStore';
 
 let upload: AbortController | null = null;
 const lifetime = new Map<string, AbortController>();
@@ -69,6 +70,7 @@ export async function closeDocument(id: string) {
   lifetime.get(id)?.abort();
   lifetime.delete(id);
   useDocumentStore.getState().remove(id);
+  useEditStore.getState().removeDocument(id);
   try {
     await pageRenderer.close(id);
   } catch {

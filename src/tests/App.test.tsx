@@ -20,7 +20,9 @@ describe('Phase 1 workspace', () => {
       screen.getByRole('contentinfo', { name: '작업 상태' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText('편집·영구 마스킹·다운로드는 아직 구현되지 않았습니다.'),
+      screen.getByText(
+        '문서 편집을 지원합니다. 영구 마스킹·다운로드는 아직 구현되지 않았습니다.',
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: '문서 열기' }),

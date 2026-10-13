@@ -2,6 +2,8 @@ import { lazy, Suspense, useRef, useState } from 'react';
 import { Sun, Moon, ScanLine, FileUp, ShieldCheck } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useDocumentStore } from '../stores/documentStore';
+import { DEFAULT_EDIT, pageKey, useEditStore } from '../stores/editStore';
+import { DEFAULT_VIEW } from '../core/geometry/coordinateTransform';
 import { WorkspaceLayout } from '../components/layout/WorkspaceLayout';
 import { DocumentPanel } from '../components/sidebar/DocumentPanel';
 import { PropertiesPanel } from '../components/sidebar/PropertiesPanel';
@@ -25,6 +27,10 @@ export function App() {
   const loading = useDocumentStore((state) => state.loading);
   const errors = useDocumentStore((state) => state.errors);
   const active = documents.find((doc) => doc.id === activeId);
+  const currentKey = active ? pageKey(active.id, active.currentPage) : '';
+  const edit = useEditStore((state) => state.pages[currentKey] ?? DEFAULT_EDIT);
+  const view = useEditStore((state) => state.views[currentKey] ?? DEFAULT_VIEW);
+  const displayZoom = useEditStore((state) => state.displayZoom[currentKey]);
   const input = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
   const openFiles = () => input.current?.click();
@@ -79,7 +85,7 @@ export function App() {
               </div>
             </div>
             <div className="header-actions">
-              <span className="phase-badge">PHASE 02 · 문서 탐색</span>
+              <span className="phase-badge">PHASE 03 · 문서 편집</span>
               <button className="primary-button" onClick={openFiles}>
                 <FileUp size={17} />
                 문서 열기
@@ -138,7 +144,10 @@ export function App() {
             )}
             {active ? (
               <Suspense fallback={<p role="status">뷰어 준비 중…</p>}>
-                <DocumentViewer key={active.id} document={active} />
+                <DocumentViewer
+                  key={`${active.id}:${active.currentPage}`}
+                  document={active}
+                />
               </Suspense>
             ) : (
               <div className="viewer-content">
@@ -171,7 +180,8 @@ export function App() {
                     <span>파일당 100MB · 열린 파일 총 200MB</span>
                   </div>
                   <p className="future-note">
-                    편집·영구 마스킹·다운로드는 아직 구현되지 않았습니다.
+                    문서 편집을 지원합니다. 영구 마스킹·다운로드는 아직 구현되지
+                    않았습니다.
                   </p>
                 </div>
               </div>
@@ -189,7 +199,7 @@ export function App() {
               {loading
                 ? '불러오는 중'
                 : active
-                  ? '문서 탐색 준비됨'
+                  ? '문서 편집 준비됨'
                   : '문서 열기 대기'}
             </span>
             <span>
@@ -198,7 +208,10 @@ export function App() {
               {active
                 ? `${active.currentPage + 1} / ${active.pageCount}`
                 : '— / —'}{' '}
-              <span className="status-divider">|</span> 화면 미리보기
+              <span className="status-divider">|</span>{' '}
+              {active
+                ? `${displayZoom === undefined ? '—' : Math.round(displayZoom * 100)}%${view.mode === 'fit' ? ' 화면 맞춤' : view.mode === 'width' ? ' 너비 맞춤' : ''} · 회전 ${edit.rotation}°`
+                : '화면 미리보기'}
             </span>
             <span className="status-version">DocumentMask Studio · v0.2.0</span>
           </footer>

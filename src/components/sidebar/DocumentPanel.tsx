@@ -4,6 +4,14 @@ import { useDocumentStore } from '../../stores/documentStore';
 import { closeDocument } from '../../features/file-upload/documentActions';
 import { useRenderedPage } from '../../hooks/useRenderedPage';
 import type { DocumentModel } from '../../core/document/DocumentModel';
+import {
+  DEFAULT_EDIT,
+  isEdited,
+  pageKey,
+  useEditStore,
+} from '../../stores/editStore';
+import { editGeometry } from '../../core/geometry/coordinateTransform';
+import { transformPixels } from '../../core/image/colorTransform';
 
 function Thumbnail({
   document,
@@ -13,15 +21,27 @@ function Thumbnail({
   index: number;
 }) {
   const { page, error } = useRenderedPage(document.id, index, 160);
+  const edit = useEditStore(
+    (state) => state.pages[pageKey(document.id, index)] ?? DEFAULT_EDIT,
+  );
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const canvas = ref.current;
     if (page && canvas) {
-      canvas.width = page.canvas.width;
-      canvas.height = page.canvas.height;
-      canvas.getContext('2d')?.drawImage(page.canvas, 0, 0);
+      const geometry = editGeometry(page.canvas, edit);
+      canvas.width = geometry.width;
+      canvas.height = geometry.height;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.setTransform(...geometry.matrix);
+        context.drawImage(page.canvas, 0, 0);
+        context.resetTransform();
+        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+        transformPixels(pixels.data, edit);
+        context.putImageData(pixels, 0, 0);
+      }
     }
-  }, [page]);
+  }, [page, edit]);
   return (
     <button
       className={`thumbnail ${document.currentPage === index ? 'selected' : ''}`}
@@ -36,7 +56,10 @@ function Thumbnail({
           <span>{error ? '미리보기 오류' : '로딩…'}</span>
         )}
       </div>
-      <span>{index + 1}페이지</span>
+      <span>
+        {index + 1}페이지{' '}
+        {isEdited(edit) && <small className="edited-badge">편집됨</small>}
+      </span>
     </button>
   );
 }

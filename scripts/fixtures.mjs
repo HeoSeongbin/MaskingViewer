@@ -5,6 +5,21 @@ import { createCanvas } from '@napi-rs/canvas';
 
 export async function createFixtures(directory) {
   await mkdir(directory, { recursive: true });
+  const quadrants = createCanvas(100, 60);
+  const quadrantContext = quadrants.getContext('2d');
+  for (const [x, y, color] of [
+    [0, 0, '#ff0000'],
+    [50, 0, '#00ff00'],
+    [0, 30, '#0000ff'],
+    [50, 30, '#ffffff'],
+  ]) {
+    quadrantContext.fillStyle = color;
+    quadrantContext.fillRect(x, y, 50, 30);
+  }
+  await writeFile(
+    `${directory}/quadrants.png`,
+    quadrants.toBuffer('image/png'),
+  );
   const canvas = createCanvas(240, 160);
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#087f72';

@@ -1,5 +1,7 @@
 import type { DocumentModel } from '../../core/document/DocumentModel';
 import { useRenderedPage } from '../../hooks/useRenderedPage';
+import { DEFAULT_EDIT, pageKey, useEditStore } from '../../stores/editStore';
+import { editGeometry } from '../../core/geometry/coordinateTransform';
 export function PropertiesPanel({
   document,
 }: {
@@ -10,6 +12,13 @@ export function PropertiesPanel({
     document?.currentPage ?? 0,
     1800,
   );
+  const edit = useEditStore((state) =>
+    document
+      ? (state.pages[pageKey(document.id, document.currentPage)] ??
+        DEFAULT_EDIT)
+      : DEFAULT_EDIT,
+  );
+  const geometry = page ? editGeometry(page.metadata, edit) : undefined;
   return (
     <>
       <div className="panel-title">
@@ -59,9 +68,55 @@ export function PropertiesPanel({
         )}
       </div>
       <div className="property-section">
-        <h3>편집과 마스킹</h3>
+        <h3>페이지 편집</h3>
+        {document && (
+          <dl>
+            <div>
+              <dt>사용자 회전</dt>
+              <dd>{edit.rotation}°</dd>
+            </div>
+            <div>
+              <dt>기하 반전</dt>
+              <dd>
+                {edit.flipX ? '좌우 ' : ''}
+                {edit.flipY ? '상하' : ''}
+                {!edit.flipX && !edit.flipY ? '없음' : ''}
+              </dd>
+            </div>
+            <div>
+              <dt>변환 후 크기</dt>
+              <dd>
+                {geometry
+                  ? `${Math.round(geometry.width)} × ${Math.round(geometry.height)} ${page?.metadata.unit}`
+                  : '—'}
+              </dd>
+            </div>
+            <div>
+              <dt>색상 모드</dt>
+              <dd>
+                {edit.tone === 'original'
+                  ? '원본'
+                  : edit.tone === 'binary'
+                    ? '흑백'
+                    : 'Grayscale'}
+                {edit.invert ? ' · 반전' : ''}
+              </dd>
+            </div>
+            <div>
+              <dt>밝기 / 대비</dt>
+              <dd>
+                {edit.brightness} / {edit.contrast}
+              </dd>
+            </div>
+          </dl>
+        )}
         <p className="muted">
-          문서 편집·마스킹은 Phase 3–4, 결과 다운로드는 Phase 5에서 제공됩니다.
+          Ctrl+휠로 포인터 중심 확대, 손 도구로 드래그, 휠·방향키로 이동합니다.
+          Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y로 현재 페이지의 편집을 되돌립니다.
+        </p>
+        <p className="muted">
+          영구 마스킹은 Phase 4–5, 결과 다운로드는 Phase 5에서 제공됩니다. 현재
+          편집은 브라우저 세션 안에서만 유지됩니다.
         </p>
       </div>
       <div className="security-card">

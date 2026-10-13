@@ -1,16 +1,59 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Group, Image as KonvaImage } from 'react-konva';
 import { useRenderedPage } from '../../hooks/useRenderedPage';
+import { useColorPreview } from '../../hooks/useColorPreview';
 import type { DocumentModel } from '../../core/document/DocumentModel';
-
+import { DEFAULT_EDIT, pageKey, useEditStore } from '../../stores/editStore';
+import {
+  DEFAULT_VIEW,
+  displayGeometry,
+  zoomAt,
+  screenToStage,
+  sourcePoint,
+  constrainPan,
+} from '../../core/geometry/coordinateTransform';
+import type { Point } from '../../core/geometry/transformMatrix';
+import { EditToolbar } from '../toolbar/EditToolbar';
 export function DocumentViewer({ document }: { document: DocumentModel }) {
   const { page, error } = useRenderedPage(
     document.id,
     document.currentPage,
     1800,
   );
+  const key = pageKey(document.id, document.currentPage);
+  const edit = useEditStore((state) => state.pages[key] ?? DEFAULT_EDIT);
+  const view = useEditStore((state) => state.views[key] ?? DEFAULT_VIEW);
+  const tool = useEditStore((state) => state.tool);
+  const preview = useColorPreview(page?.canvas, edit);
   const ref = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ pointerId: number; point: Point; pan: Point } | null>(
+    null,
+  );
   const [size, setSize] = useState({ width: 400, height: 500 });
+  const [pointer, setPointer] = useState<Point | null>(null);
+  const source = page?.metadata ?? { width: 1, height: 1 };
+  const display = displayGeometry(source, edit, view, size);
+  useEffect(() => {
+    if (page) useEditStore.getState().reportZoom(key, display.zoom);
+  }, [key, display.zoom, page]);
+  const setView = (next: typeof view) =>
+    useEditStore.getState().setView(key, next);
+  const panTo = (pan: Point) =>
+    setView({
+      ...view,
+      pan: constrainPan(
+        pan,
+        {
+          width: display.width * display.zoom,
+          height: display.height * display.zoom,
+        },
+        size,
+      ),
+    });
+  const zoom = (
+    value: number,
+    point: Point = { x: size.width / 2, y: size.height / 2 },
+  ) => setView(zoomAt(source, edit, view, size, point, value));
   useEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -24,50 +67,163 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
-  const scale = page
-    ? Math.min(
-        (size.width - 40) / page.canvas.width,
-        (size.height - 40) / page.canvas.height,
-        1,
-      )
-    : 1;
-  const width = page ? page.canvas.width * Math.max(0.01, scale) : 0;
-  const height = page ? page.canvas.height * Math.max(0.01, scale) : 0;
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || !page) return;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const factor =
+        event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? size.height : 1;
+      if (event.ctrlKey)
+        zoom(
+          display.zoom *
+            Math.exp(
+              -Math.max(-100, Math.min(100, event.deltaY * factor)) * 0.002,
+            ),
+          screenToStage(
+            { x: event.clientX, y: event.clientY },
+            element.getBoundingClientRect(),
+            size,
+          ),
+        );
+      else
+        panTo({
+          x:
+            display.pan.x -
+            event.deltaX * factor -
+            (event.shiftKey ? event.deltaY * factor : 0),
+          y: display.pan.y - (event.shiftKey ? 0 : event.deltaY * factor),
+        });
+    };
+    element.addEventListener('wheel', wheel, { passive: false });
+    return () => element.removeEventListener('wheel', wheel);
+  });
+  const matrix = display.matrix;
+  const geometryPoint = pointer ? sourcePoint(matrix, pointer) : null;
+  const errorMessage = error ?? preview.error;
   return (
-    <div
-      ref={ref}
-      className="document-stage"
-      role="img"
-      aria-label={`${document.name} ${document.currentPage + 1}페이지 미리보기`}
-      aria-busy={!page && !error}
-    >
-      {error ? (
-        <p role="alert" className="render-error">
-          {error}
-        </p>
-      ) : !page ? (
-        <p className="render-status" role="status">
-          페이지 렌더링 중…
-        </p>
-      ) : (
-        <Stage width={size.width} height={size.height}>
-          <Layer listening={false}>
-            <KonvaImage
-              image={page.canvas}
-              x={(size.width - width) / 2}
-              y={(size.height - height) / 2}
-              width={width}
-              height={height}
-            />
-          </Layer>
-        </Stage>
-      )}
+    <>
       {page && (
-        <span className="page-dimensions">
-          {Math.round(page.metadata.width)} × {Math.round(page.metadata.height)}{' '}
-          {page.metadata.unit} · 화면 미리보기
-        </span>
+        <EditToolbar
+          pageId={key}
+          zoom={display.zoom}
+          onZoom={(value) => zoom(value)}
+        />
       )}
-    </div>
+      <div
+        ref={ref}
+        className={`document-stage tool-${tool}`}
+        role="img"
+        aria-label={`${document.name} ${document.currentPage + 1}페이지 미리보기`}
+        aria-busy={!errorMessage && (!page || preview.pending)}
+        tabIndex={0}
+        onPointerDown={(event) => {
+          if (tool !== 'hand' || !page || event.button !== 0) return;
+          const point = screenToStage(
+            { x: event.clientX, y: event.clientY },
+            event.currentTarget.getBoundingClientRect(),
+            size,
+          );
+          drag.current = {
+            pointerId: event.pointerId,
+            point,
+            pan: display.pan,
+          };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          event.preventDefault();
+        }}
+        onPointerMove={(event) => {
+          const point = screenToStage(
+            { x: event.clientX, y: event.clientY },
+            event.currentTarget.getBoundingClientRect(),
+            size,
+          );
+          setPointer(point);
+          const start = drag.current;
+          if (start && start.pointerId === event.pointerId)
+            panTo({
+              x: start.pan.x + point.x - start.point.x,
+              y: start.pan.y + point.y - start.point.y,
+            });
+        }}
+        onPointerUp={(event) => {
+          drag.current = null;
+          if (event.currentTarget.hasPointerCapture(event.pointerId))
+            event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+        }}
+        onLostPointerCapture={() => {
+          drag.current = null;
+        }}
+        onPointerLeave={() => setPointer(null)}
+        onKeyDown={(event) => {
+          const steps: Record<string, Point> = {
+            ArrowLeft: { x: 40, y: 0 },
+            ArrowRight: { x: -40, y: 0 },
+            ArrowUp: { x: 0, y: 40 },
+            ArrowDown: { x: 0, y: -40 },
+          };
+          const step = steps[event.key];
+          if (step && page) {
+            event.preventDefault();
+            panTo({ x: display.pan.x + step.x, y: display.pan.y + step.y });
+          }
+        }}
+        data-zoom={display.zoom}
+        data-pan-x={display.pan.x}
+        data-pan-y={display.pan.y}
+        data-rotation={edit.rotation}
+      >
+        {errorMessage ? (
+          <p role="alert" className="render-error">
+            {errorMessage}
+          </p>
+        ) : !page || !preview.canvas ? (
+          <p className="render-status" role="status">
+            {page ? '색상 처리 중…' : '페이지 렌더링 중…'}
+          </p>
+        ) : (
+          <Stage width={size.width} height={size.height}>
+            <Layer listening={false}>
+              <Group
+                x={matrix[4]}
+                y={matrix[5]}
+                rotation={edit.rotation}
+                scaleX={
+                  display.zoom *
+                  ((edit.rotation % 180 ? edit.flipY : edit.flipX) ? -1 : 1)
+                }
+                scaleY={
+                  display.zoom *
+                  ((edit.rotation % 180 ? edit.flipX : edit.flipY) ? -1 : 1)
+                }
+              >
+                <KonvaImage
+                  image={preview.canvas}
+                  width={source.width}
+                  height={source.height}
+                />
+              </Group>
+            </Layer>
+          </Stage>
+        )}
+        {page && (
+          <span className="page-dimensions">
+            {Math.round(page.metadata.width)} ×{' '}
+            {Math.round(page.metadata.height)} {page.metadata.unit} · 편집{' '}
+            {Math.round(display.width)} × {Math.round(display.height)} ·{' '}
+            <span data-testid="zoom-status">
+              {Math.round(display.zoom * 100)}%
+            </span>
+            {page.metadata.unit === 'pt' ? ' (1pt = 1px 기준)' : ''}
+            {geometryPoint
+              ? ` · 원본 좌표 ${geometryPoint.x.toFixed(1)}, ${geometryPoint.y.toFixed(1)}`
+              : ''}
+          </span>
+        )}
+      </div>
+    </>
   );
 }

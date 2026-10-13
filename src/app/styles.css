@@ -664,3 +664,118 @@ a:focus-visible {
     flex-shrink: 0;
   }
 }
+
+.edit-toolbar,
+.color-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+}
+.tool-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  border-right: 1px solid var(--line);
+}
+.edit-toolbar button,
+.color-toolbar button {
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+}
+.edit-toolbar button[aria-pressed='true'],
+.color-toolbar button[aria-pressed='true'] {
+  background: var(--tint);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.edit-toolbar input {
+  width: 60px;
+  padding: 4px;
+}
+.edit-toolbar input,
+.color-toolbar select {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.color-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.color-slider input {
+  width: 85px;
+  accent-color: var(--accent);
+}
+.color-slider output {
+  min-width: 25px;
+}
+.tool-hand {
+  cursor: grab;
+  touch-action: none;
+}
+.tool-hand:active {
+  cursor: grabbing;
+}
+.document-stage {
+  overflow: hidden;
+  outline-offset: -3px;
+}
+.page-dimensions {
+  max-width: calc(100% - 24px);
+  pointer-events: none;
+  overflow-wrap: anywhere;
+}
+.edited-badge {
+  color: var(--accent);
+  font-size: 9px;
+}
+@media (max-width: 640px) {
+  .edit-toolbar,
+  .color-toolbar {
+    padding: 10px;
+  }
+}
+@media (min-width: 1051px) {
+  .workspace {
+    height: 100dvh;
+  }
+  .header,
+  .status-bar {
+    flex-shrink: 0;
+  }
+  .workspace-body {
+    min-height: 0;
+  }
+  .panel {
+    overflow: auto;
+  }
+  .viewer {
+    min-height: 0;
+    overflow: hidden;
+  }
+  .viewer-toolbar,
+  .edit-toolbar,
+  .color-toolbar,
+  .loading-bar,
+  .error-banner {
+    flex-shrink: 0;
+  }
+  .document-stage {
+    flex: 1;
+    height: auto;
+    min-height: 200px;
+  }
+}

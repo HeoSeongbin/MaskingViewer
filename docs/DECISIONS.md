@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–2를 구현했다. 아래 초기 전체 설계 중 편집/마스킹/출력은 이후 단계의 계약이다. 실제 Phase 2 결정과 검증 범위는 009에 기록한다.
+현재 Phase 1–3을 구현했다. 아래 초기 전체 설계 중 마스킹/출력은 이후 단계의 계약이다. 실제 Phase 2 결정은 009, Phase 3 결정과 검증 범위는 011에 기록한다.
 
 ## 001. 계층과 의존성
 
@@ -84,7 +84,7 @@ Phase 1: jsdom + Testing Library로 landmark, 미구현 안내 및 실제 테마
 - 렌더링은 전역 순차 큐로 한 번에 한 decode만 수행한다. 취소된 큐 작업은 실행 전에 폐기한다. active preview를 먼저 표시한 뒤 현재 페이지 주변 최대 7개 썸네일을 요청한다. 48MiB LRU canvas cache와 추가로 현재 UI가 참조하는 Canvas만 유지한다. cache eviction은 참조 제거로 처리하고 UI에서 아직 사용하는 Canvas를 0 크기로 바꾸지 않는다. 문서 닫기 후 도착한 결과는 0 크기로 해제하고 캐시에 재등록하지 않는다. 직전 결과를 큐 tail promise에 보관하지 않는다.
 - 입력 총량/픽셀/문서/페이지 한도는 PROGRESS.md에 명시했다. 실제 decoder 중간 버퍼와 브라우저 native 메모리까지 포함한 절대 heap 상한은 아니며 대용량 벤치마크는 Phase 6에 남아 있다. 원본 파일을 서버로 전송하는 코드가 없다.
 - PDF/TIFF는 lazy import, Konva viewer는 React.lazy로 분리했다. 초기 메인 bundle은 약 242KB이며 viewer/pdf 엔진은 필요한 시점에 로드한다.
-- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따른다. Phase 2 CI 실행은 npm ci 단계에서 실패했고, 아래 010의 수정을 이번 커밋/푸시에 포함한다. 원격 재실행 결과는 미확인이다.
+- E2E는 직접 생성한 PNG/JPEG/BMP/GIF/WEBP/PDF/TIFF/손상/암호 안내 fixture를 production 서브경로에서 실행한다. Windows는 설치된 Edge, Linux CI는 Chromium을 사용하도록 구성했다. CI E2E base는 build의 VITE_BASE_PATH를 따른다. Phase 2 CI 실행은 npm ci 단계에서 실패했고, 아래 010의 수정을 e2bb583으로 푸시했다. 원격 재실행 결과는 미확인이다.
 
 ## 010. CI 의존성 잠금 파일 복구 (2026-10-13)
 
@@ -95,3 +95,15 @@ GitHub 실행 38359540248은 npm ci에서 실패하여 나머지 검사와 배�
 실제 npm ci, Linux x64/glibc를 지정한 npm ci dry-run, 타입/lint/포맷, 23개 단위 테스트, production 서브경로 빌드 및 10개 Windows Edge E2E가 통과했다. Linux dry-run은 실제 Linux에서 빌드/브라우저를 실행했다는 의미가 아니다. GitHub 재실행 및 Pages 성공 여부는 푸시 후 별도로 확인해야 한다.
 
 앞으로 잠금 파일을 수정하면 npm install 결과와 별도로 npm ci를 검사한다. 설치 재현 실패를 우회하려고 CI를 npm install 또는 --legacy-peer-deps/--force로 바꾸지 않는다. Windows에서 native 모듈이 잠긴 경우 이 프로젝트의 Vite 서버만 종료한 뒤 설치 검증하고 다시 실행한다.
+
+## 011. Phase 3 편집과 좌표 변환 (2026-10-13)
+
+- 순수 affine 행렬은 Canvas와 같은 [a,b,c,d,e,f] 규약이다. 정규화된 원본 → 시계 방향 90° 단위 회전 → 회전된 화면 기준 좌우/상하 반전 → 양수 경계 보정 → zoom → 중심 배치/pan으로 합성한다. Konva Group은 같은 행렬의 translation과 회전/scale을 적용한다. 홀수 90° 회전에서는 Group의 local scale 축을 교환하여 화면 기준 flip과 일치시킨다. thumbnail도 같은 geometry를 사용한다.
+- CSS screen→Stage는 DOM rect 비율로 변환하고 원본 좌표는 전체 행렬의 역행렬로 얻는다. HiDPI는 Konva backing buffer에만 적용한다. 확대 이전 pointer의 원본 위치를 새 행렬에서도 같은 화면 점으로 맞춘다. 단, 화면 밖 이탈 방지를 위한 pan clamp가 필요한 가장자리에서는 clamp가 우선한다. 최소/최대 zoom은 1–800%, 페이지가 화면에 맞으면 기본 zoom은 최대 100%다. 화면/너비 맞춤은 resize와 편집 크기 변화 시 재계산한다.
+- 포인터 위치를 유지하는 확대 방식은 [Konva 공식 예제](https://konvajs.org/docs/sandbox/Zooming_Relative_To_Pointer.html)를 참고했다. 입력은 DOM pointer capture와 non-passive wheel listener로 처리하고 행렬 계산 자체는 Konva와 분리한다.
+- raster/TIFF는 정규화된 원본 px를 기준으로 한다. PDF는 PDF.js 초기 viewport 회전을 이미 반영한 1 raster px/pt 좌표를 기준으로 하며 사용자 회전을 추가한다. 100%의 의미는 CSS 1px/원본 기준 단위이며 PDF UI에 명시한다. preview Canvas 픽셀 수를 geometry 기준으로 사용하지 않는다. Phase 5 출력 DPI와 기준→출력 raster 비율 변환은 별도로 구현해야 한다.
+- Zustand editStore는 documentId:pageIndex별 serializable 편집/viewport/이력만 저장한다. geometry/color는 페이지별이며 확대/pan은 Undo 대상이 아니다. 회전/반전/색상 변경만 최대 100개/페이지 이력에 기록하고 slider pointer 또는 keyboard 작업을 transaction으로 묶는다. 현재 페이지에만 Undo/Redo를 적용한다. 문서 닫기 시 편집/viewport/이력/표시 배율도 삭제한다. Phase 4의 마스킹 데이터와 transaction은 아직 연결하지 않았다.
+- 색상 순서는 invert → Rec.709 가중 grayscale(선택 시) → 대비 → 밝기 → binary threshold(선택 시)다. 흑백은 임계값 128의 0/255 단색 값이며 grayscale과 구분한다. RGB를 clamp하고 alpha는 유지한다. 미리보기 원본을 수정하지 않고 새 Canvas/픽셀 사본에 적용한다. 동일 순수 커널을 색상 Worker와 작은 thumbnail에서 재사용하며 Phase 5에서도 재사용할 수 있다.
+- 색상 preview는 최대 1,800px 입력을 Worker에 transferable 사본으로 전달한다. 상태 변경/페이지 전환/문서 닫기 시 terminate 및 임시 Canvas 해제, 결과 signature 비교로 이전 결과를 폐기한다. 10초 timeout/실패 안내 후 색상 복원으로 재개할 수 있다. Worker API가 없는 raster 환경은 제한된 preview의 main-thread fallback을 사용하며 대용량 성능 보장은 아니다. TIFF의 Worker 필수 원칙은 유지한다.
+- 데스크톱은 viewport 높이에 맞춰 작업 영역을 배치하고 패널 내부에서 스크롤한다. 좁은 화면은 기존처럼 패널을 아래로 재배치하고 도구를 줄바꿈한다. 페이지별 수정 표시와 thumbnail은 미리보기이며 파일 저장 완료를 의미하지 않는다.
+- 검증: 단위 95개 및 production /MaskingViewer/의 Windows Edge E2E 15개. affine 64조합 왕복/방향/경계/역행렬/zoom, 색상 alpha/threshold, 이력 branching/한도/자원 상태 정리, HiDPI 실제 비대칭 픽셀, PDF 초기 회전·페이지 보존, TIFF preview/thumbnail 색상 일치, Worker 오류 복구/fallback 및 페이지 전환을 확인했다. 마스킹 생성/출력/보안, 다른 브라우저 및 대용량 성능은 후속 관문이다.
