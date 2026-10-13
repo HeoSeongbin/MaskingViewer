@@ -20,11 +20,11 @@ describe('Phase 1 workspace', () => {
       screen.getByRole('contentinfo', { name: '작업 상태' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(
-        '파일 업로드, 편집, 영구 마스킹 및 다운로드는 아직 구현되지 않았습니다.',
-      ),
+      screen.getByText('편집·영구 마스킹·다운로드는 아직 구현되지 않았습니다.'),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(
+      screen.getByRole('button', { name: '문서 열기' }),
+    ).toBeInTheDocument();
   });
   it('switches theme in both directions through a real user action', async () => {
     const user = userEvent.setup();

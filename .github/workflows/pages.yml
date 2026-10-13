@@ -36,6 +36,8 @@ jobs:
             echo "VITE_BASE_PATH=/$repo/" >> "$GITHUB_ENV"
           fi
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'
         with:

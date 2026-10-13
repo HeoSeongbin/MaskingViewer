@@ -4,3 +4,4 @@ coverage
 package-lock.json
 PROJECT.md
 AGENTS.md
+public/pdfjs
