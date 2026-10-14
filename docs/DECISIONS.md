@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–4를 구현했다. 아래 초기 전체 설계 중 출력은 이후 단계의 계약이다. 실제 Phase 2 결정은 009, Phase 3 결정과 검증 범위는 011, Phase 4는 013에 기록한다.
+현재 Phase 1–5를 구현했다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5 출력과 검증 범위는 014를 기준으로 한다.
 
 ## 001. 계층과 의존성
 
@@ -135,3 +135,23 @@ masks를 PageEdit에 추가하여 회전/반전/색상과 마스킹 생성·이�
 이것은 Phase 4 편집 preview다. 실제 새 픽셀 생성, 출력 DPI 변환, 바깥 방향 경계 확장, PDF 원본 객체/텍스트/주석 미복사 및 출력 재디코딩 검증은 Phase 5에서 구현해야 한다. 현재 원본 File과 decode 리소스를 유지하므로 영구 제거 또는 안전한 결과물로 표현하지 않는다.
 
 검증: 단위 129개, Windows Chromium/Edge 각각 E2E 20개. 마스킹 E2E는 DPR 2에서 원본 좌표와 실제 픽셀을 검사한다. affine/경계/교차/히스토리, 색상/숨김/삭제/취소, PDF 초기 회전과 TIFF, 모바일 390px를 포함한다. screenshot은 CAPTURE_PHASE4=1의 기존 PDF/TIFF 테스트에서 재현한다. 원격 Phase 4 CI와 실제 터치/Safari/Firefox/대용량 메모리는 아직 미검증이다.
+
+## 014. Phase 5 새 픽셀 출력과 검증 (2026-10-14)
+
+출력 UI는 ExportPanel, 형식과 무관한 조정은 ExportPipeline, 픽셀 합성은 pixels.ts, baseline TIFF 인코딩은 TiffExporter로 분리한다. 출력 시작 시 해당 문서의 직렬화 가능한 편집 상태만 snapshot한다. 화면 zoom/pan/HiDPI/마스킹 숨김은 결과에 반영하지 않는다. 이미 열린 어댑터와 동일한 순차 큐를 사용하되 출력 Canvas는 캐시하지 않으며 사용 후 크기를 0으로 해제한다. AbortSignal을 전달하고 취소/문서 전환 후 결과를 다운로드하지 않는다. 일부 인코딩/검사는 동기 작업이므로 취소는 해당 단계 종료 후 반영된다.
+
+Adapter renderPage의 선택적 DPI 인수를 추가했다. 일반 이미지/TIFF는 원본 픽셀 크기, PDF는 초기 viewport 회전을 유지한 150 또는 300 DPI다. PDF의 정규화된 pt 좌표를 실제 raster 가로/세로 비율로 변환한다. 출력 이미지 크기는 ceil로 결정하고 PDF 물리 크기는 원본 pt(사용자 90° 회전이면 축 교환)를 유지한다. 이미지에서 PDF를 만들 때는 선택한 DPI로 인쇄 크기를 계산한다. 큰 PDF가 지정 DPI의 예산을 초과하면 임의 축소하지 않고 낮은 DPI 또는 페이지 범위 변경을 안내한다.
+
+005의 초기 순서와 달리, 실제 합성은 새 RGBA 사본 → 공통 색상 커널 → 흰색 배경과 불투명 합성 → 원본 raster 좌표의 단색 마스킹 → 정수 픽셀 회전/반전 순서다. 기하 변환은 90° 단위의 픽셀 순열이므로 마스킹 후 변환해도 영역이 같으며 보간/안티앨리어싱이 없다. 마스킹 사각형은 floor/ceil로 바깥 방향 반올림한 뒤 사방 1 출력 픽셀을 추가로 덮는다. 이 안전 여백과 투명 배경의 흰색 합성은 UI/README에 명시한다. 원본 RGBA와 색상/픽셀은 직접 수정하지 않는다. 투명 픽셀의 숨은 RGB도 출력에 보존하지 않는다.
+
+PNG는 새 Canvas 인코딩 후 createImageBitmap으로 재개방하고 크기와 전체 RGBA를 정확히 비교한다. JPEG는 품질 0.98로 이미 제거된 픽셀만 압축하고 재개방 크기/불투명 여부/마스킹 영역의 채널 오차 최대 64를 검사한다. 손실 압축의 색상/경계 변화를 제거 보장과 구분하며 정확한 단색은 PNG/PDF/TIFF를 안내한다. 이 허용 오차는 보편적인 보안 인증이 아니다. 검사 실패 시 파일을 전달하지 않는다.
+
+[PDFDocument 공식 API](https://pdf-lib.js.org/docs/api/classes/pdfdocument)를 확인하고 기존 pdf-lib 1.17.1을 devDependency에서 runtime dependency로 이동했다. 새 PDFDocument에 마스킹 완료 PNG만 embedPng/drawImage한다. 원본 PDF를 load/copy/embed하지 않는다. pdf-lib가 생성한 빈 Annots 배열도 저장 전 제거한다. 저장한 결과를 다시 읽어 catalog의 Names/AcroForm/OpenAction/AA/Metadata/OCProperties 및 페이지 주석/추가 동작/metadata, 텍스트 font 리소스가 없는지 검사한다. 페이지당 단일 RGB8 이미지 구조와 크기, alpha mask 부재를 확인하고 Flate 이미지 데이터를 풀어 전체 RGB를 새 픽셀과 비교한다. 원본 텍스트·주석·첨부·숨김 레이어와 원본 metadata는 복사하지 않는다. 생성 도구의 기본 metadata는 존재할 수 있다.
+
+[UTIF 공식 API](https://github.com/photopea/UTIF.js/blob/master/README.md)의 encodeImage는 단일 이미지 중심이라 다중 페이지 출력은 [TIFF 6.0 규격](https://www.itu.int/itudoc/itu-t/com16/tiff-fx/docs/tiff6.html)에 따른 작은 baseline 인코더로 구현했다. little-endian classic TIFF, RGB 8bit×3, 무압축, 페이지별 단일 strip, orientation 1과 next-IFD 체인을 생성한다. 출력 TIFF는 원본 압축/metadata를 재사용하지 않으며 입력보다 커질 수 있다. 별도 UTIF 디코더로 페이지 순서/크기/전체 RGBA를 재검증한다. BigTIFF/출력 압축/원본 EXIF 또는 DPI metadata 보존은 제공하지 않는다.
+
+다중 PNG/JPEG는 [JSZip generateAsync](https://stuk.github.io/jszip/documentation/api_jszip/generate_async.html)를 사용한다. JSZip 3.10.1을 runtime dependency로 추가해 STORE 방식으로 페이지별 이미지를 순서대로 묶고, loadAsync(checkCRC32)로 다시 연 뒤 각 항목 바이트와 개수를 검사한다. 이미지 자체는 ZIP 조립 전에 재디코딩 검사한다. ZIP에는 page_0001 등 번호 이름의 새 이미지만 포함한다. 최종 파일명은 원본 이름을 정리하고 _masked와 실제 확장자를 사용한다. 현재/전체 범위와 예상 페이지 수/형식, 진행 상태, 취소, 오류를 UI에 표시한다. PNG/JPEG/PDF/TIFF 입력은 지원되는 동일 형식이 기본값이며 다른 입력은 PNG를 기본으로 제공한다.
+
+한 번에 최대 200페이지, 기존 페이지당 1,600만 픽셀/한 변 16,384 한도와 출력 추정 예산 128MiB를 함께 적용한다. decode 전에 metadata×DPI로 픽셀 예산을 검사한다. 중간 버퍼를 픽셀당 20바이트로 보수적으로 추정하고 누적 결과/최종 파일의 3배도 검사한다. 페이지 decode/합성은 순차이며 PDF/TIFF 최종 조립 및 검증을 위한 제한된 픽셀/이미지는 보관한다. 이 계산은 decoder/native/GC/동시 preview를 포함한 실제 전체 heap 상한이 아니다. 큰 파일의 Worker 합성, 스트리밍, heap 실측과 더 즉각적인 취소는 Phase 6에 남긴다. export/인코더 라이브러리는 lazy import하여 초기 bundle 증가를 제한했다.
+
+검증은 PROGRESS.md의 Phase 5 최종 결과를 기준으로 한다. 신규 단위 테스트는 모든 16개 회전/양축 반전 조합의 실제 마스킹 픽셀, 원본 불변, PDF 비율, 투명 RGB 제거, TIFF 독립 재디코딩 및 export 캐시/사전 예산/취소를 검사한다. E2E는 실제 다운로드를 읽어 PNG/JPEG/TIFF/ZIP/PDF 결과를 검사하고 PDF.js로 원본의 검색 가능 문자열/주석/첨부 존재와 출력의 제거를 비교한다. 손상된 재디코딩 결과는 다운로드가 차단되고 취소 후 재시도도 가능해야 한다. 자동화 fixture 범위 밖의 모든 정보 복구 공격/모든 브라우저에 대한 절대적 보안을 선언하지 않는다.

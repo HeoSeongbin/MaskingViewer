@@ -60,7 +60,7 @@ export async function openPdf(
           unit: 'pt',
         };
       },
-      async renderPage(index, maxEdge, cancel) {
+      async renderPage(index, maxEdge, cancel, dpi) {
         assertPage(index, pdf.numPages);
         checkAbort(cancel);
         if (disposed) throw abortError();
@@ -68,13 +68,18 @@ export async function openPdf(
         checkAbort(cancel);
         const natural = page.getViewport({ scale: 1 });
         // PDF has no intrinsic pixel resolution. Preview uses at most 2 px/pt.
-        const size = previewSize(
-          Math.ceil(natural.width * 2),
-          Math.ceil(natural.height * 2),
-          maxEdge,
-        );
+        const size = dpi
+          ? {
+              width: Math.ceil((natural.width * dpi) / 72),
+              height: Math.ceil((natural.height * dpi) / 72),
+            }
+          : previewSize(
+              Math.ceil(natural.width * 2),
+              Math.ceil(natural.height * 2),
+              maxEdge,
+            );
         const viewport = page.getViewport({
-          scale: size.width / natural.width,
+          scale: dpi ? dpi / 72 : size.width / natural.width,
         });
         const canvas = makeCanvas(
           Math.ceil(viewport.width),

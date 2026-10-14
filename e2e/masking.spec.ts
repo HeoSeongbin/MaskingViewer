@@ -183,9 +183,7 @@ test('mask colors, hiding, properties, reset and clear preserve safety and origi
   ).toBeVisible();
   await expect(
     page.getByRole('complementary', { name: '속성 패널' }),
-  ).toContainText(
-    '영구 마스킹 합성과 안전한 다운로드는 아직 제공하지 않습니다',
-  );
+  ).toContainText('원본은 유지되며 다운로드 시 새 픽셀로 마스킹을 적용합니다');
   await page
     .getByRole('button', { name: '현재 페이지 마스킹 전체 삭제', exact: true })
     .click();

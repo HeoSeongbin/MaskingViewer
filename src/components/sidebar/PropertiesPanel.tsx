@@ -123,7 +123,7 @@ export function PropertiesPanel({
           Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y로 현재 페이지의 편집을 되돌립니다.
         </p>
         <p className="muted">
-          영구 마스킹 합성과 결과 다운로드는 Phase 5에서 제공됩니다. 현재 편집은
+          다운로드에서 편집과 마스킹을 새 픽셀로 합성합니다. 현재 편집 상태는
           브라우저 세션 안에서만 유지됩니다.
         </p>
       </div>

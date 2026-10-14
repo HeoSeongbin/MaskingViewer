@@ -71,5 +71,41 @@ export class PageRenderer {
       }
     await adapter?.dispose();
   }
+  async renderExport(
+    id: string,
+    index: number,
+    dpi: number,
+    signal: AbortSignal,
+    pixelBudget = 16_000_000,
+  ): Promise<RenderedPage> {
+    const result = this.tail
+      .catch(() => undefined)
+      .then(async () => {
+        checkAbort(signal);
+        const adapter = this.adapters.get(id);
+        if (!adapter) throw abortError();
+        const metadata = await adapter.getPageMetadata(index, signal);
+        const factor = metadata.unit === 'pt' ? dpi / 72 : 1;
+        if (
+          Math.ceil(metadata.width * factor) *
+            Math.ceil(metadata.height * factor) >
+          pixelBudget
+        )
+          throw new Error(
+            '출력 메모리 예산을 초과합니다. 현재 페이지만 또는 낮은 PDF DPI로 출력하세요.',
+          );
+        const canvas = await adapter.renderPage(index, 16384, signal, dpi);
+        if (signal.aborted || this.adapters.get(id) !== adapter) {
+          canvas.width = canvas.height = 0;
+          throw abortError();
+        }
+        return { canvas, metadata };
+      });
+    this.tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    return result;
+  }
 }
 export const pageRenderer = new PageRenderer();

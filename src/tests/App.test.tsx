@@ -21,7 +21,7 @@ describe('Phase 1 workspace', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        '문서 편집을 지원합니다. 영구 마스킹·다운로드는 아직 구현되지 않았습니다.',
+        '문서를 열고 편집한 뒤 마스킹이 적용된 새 파일로 다운로드하세요.',
       ),
     ).toBeInTheDocument();
     expect(

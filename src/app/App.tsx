@@ -8,6 +8,7 @@ import { WorkspaceLayout } from '../components/layout/WorkspaceLayout';
 import { DocumentPanel } from '../components/sidebar/DocumentPanel';
 import { PropertiesPanel } from '../components/sidebar/PropertiesPanel';
 import { PageNavigation } from '../components/toolbar/PageNavigation';
+import { ExportPanel } from '../components/dialogs/ExportPanel';
 import {
   uploadFiles,
   cancelUpload,
@@ -85,7 +86,8 @@ export function App() {
               </div>
             </div>
             <div className="header-actions">
-              <span className="phase-badge">PHASE 04 · 마스킹 편집</span>
+              <span className="phase-badge">PHASE 05 · 결과 저장</span>
+              {active && <ExportPanel key={active.id} document={active} />}
               <button className="primary-button" onClick={openFiles}>
                 <FileUp size={17} />
                 문서 열기
@@ -180,8 +182,8 @@ export function App() {
                     <span>파일당 100MB · 열린 파일 총 200MB</span>
                   </div>
                   <p className="future-note">
-                    문서 편집을 지원합니다. 영구 마스킹·다운로드는 아직 구현되지
-                    않았습니다.
+                    문서를 열고 편집한 뒤 마스킹이 적용된 새 파일로
+                    다운로드하세요.
                   </p>
                 </div>
               </div>

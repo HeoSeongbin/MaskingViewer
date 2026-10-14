@@ -37,8 +37,8 @@ export function MaskPanel({
         마스킹 영역 · {edit.masks.length} / {MAX_MASKS}
       </h3>
       <p className="document-notice">
-        편집 미리보기입니다. 영구 마스킹 합성과 안전한 다운로드는 아직 제공하지
-        않습니다.
+        편집 미리보기입니다. 원본은 유지되며 다운로드 시 새 픽셀로 마스킹을
+        적용합니다.
       </p>
       <div className="mask-actions">
         <label>

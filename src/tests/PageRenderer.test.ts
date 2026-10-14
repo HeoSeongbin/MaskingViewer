@@ -20,6 +20,25 @@ function adapter(): DocumentAdapter {
   };
 }
 describe('render resource lifecycle', () => {
+  it('exports without caching and checks output pixel budget before decode', async () => {
+    const renderer = new PageRenderer();
+    const source = adapter();
+    renderer.register('a', source);
+    const signal = new AbortController().signal;
+    await expect(
+      renderer.renderExport('a', 0, 150, signal, 99),
+    ).rejects.toThrow('메모리 예산');
+    expect(source.renderPage).not.toHaveBeenCalled();
+    await renderer.renderExport('a', 0, 300, signal);
+    await renderer.renderExport('a', 0, 300, signal);
+    expect(source.renderPage).toHaveBeenCalledTimes(2);
+    expect(source.renderPage).toHaveBeenLastCalledWith(0, 16384, signal, 300);
+    const cancelled = new AbortController();
+    cancelled.abort();
+    await expect(
+      renderer.renderExport('a', 0, 150, cancelled.signal),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+  });
   it('does not resurrect a page that completes after its document was closed', async () => {
     const renderer = new PageRenderer();
     const source = adapter();

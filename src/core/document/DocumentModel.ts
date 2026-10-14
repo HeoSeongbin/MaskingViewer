@@ -23,6 +23,7 @@ export interface DocumentAdapter {
     index: number,
     maxEdge: number,
     signal: AbortSignal,
+    dpi?: number,
   ): Promise<HTMLCanvasElement>;
   dispose(): Promise<void>;
 }

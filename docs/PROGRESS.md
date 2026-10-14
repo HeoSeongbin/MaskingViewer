@@ -6,8 +6,8 @@
 
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
-- 이번 작업은 Phase 4 마스킹 영역 편집을 구현했다. Phase 5의 새 픽셀 합성/파일 출력/영구 마스킹 보안 검증은 구현하지 않았다. 기존 Phase 3 좌표 엔진과 편집 이력을 확장했다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4 변경은 이번 로컬 커밋에 포함하며, 사용자 요청에 따라 푸시는 진행하지 않는다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
+- 이번 작업은 Phase 5의 새 픽셀 마스킹 합성, PNG/JPEG/PDF/ZIP/단일·다중 TIFF 출력과 재디코딩/구조 검증을 구현했다. Phase 6의 Worker 합성·대용량 성능 실측·브라우저 확장 검증은 시작하지 않았다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 이번 로컬 커밋에 포함하며 푸시는 진행하지 않는다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
 
 ## Phase 1 — 완료
 
@@ -25,7 +25,7 @@
 - [x] GitHub Actions의 typecheck/lint/format/test/build와 성공 후 main 배포 설정
 - [x] 정적 빌드 및 실제 브라우저 기본 화면 확인
 
-Phase 1 완료 당시 미구현 기능은 안내만 표시했다. 현재 업로드/탐색/편집은 실제 동작하고 마스킹/다운로드는 예정 단계로 표시한다. 실제 GitHub 호스팅 배포는 별도 미검증이다.
+Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재 업로드/탐색/편집/마스킹/다운로드는 실제 동작한다. 실제 GitHub 호스팅 배포는 별도 미검증이다.
 
 ## Phase 2 — 완료 (명시한 지원 범위)
 
@@ -57,7 +57,7 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. 현재 업로�
 - [x] 색상 Worker, 새 요청/페이지 전환 취소·종료, 10초 timeout, 실패 복구 및 Worker 없는 raster fallback
 - [x] 배율 50/100/200/400%, 회전 0/90/180/270°, 반전/이동 조합 64개 왕복 및 실제 복합 변환 E2E
 
-표시 좌표는 정규화된 원본 기준이다. 일반 이미지/TIFF는 원본 px, PDF는 초기 회전을 적용한 1px/pt 기준 raster 좌표(100% = 1pt당 CSS 1px)다. 실제 PDF 출력 DPI와 raster 비율 변환은 Phase 5에서 구현해야 한다. 1,800px 미리보기 확대는 디코딩 해상도를 높이지 않는다. Phase 3 시점의 원본 좌표/음수 드래그는 순수 엔진 테스트로 검사했고, Phase 4에서는 실제 마스킹 gesture도 검증했다. 다운로드 결과 일치/영구 마스킹 보안은 아직 미검증이다.
+표시 좌표는 정규화된 원본 기준이다. 일반 이미지/TIFF는 원본 px, PDF는 초기 회전을 적용한 1px/pt 기준 raster 좌표(100% = 1pt당 CSS 1px)다. Phase 3에서는 PDF 출력 DPI와 raster 비율 변환을 구현하지 않았으며 이후 Phase 5에서 별도 출력 경로로 구현했다. 1,800px 미리보기 확대는 디코딩 해상도를 높이지 않는다. Phase 3 시점의 원본 좌표/음수 드래그는 순수 엔진 테스트로 검사했고, Phase 4에서는 실제 마스킹 gesture도 검증했다. Phase 3 당시 다운로드 결과 일치/영구 마스킹 보안은 미검증이었다. 최신 결과는 Phase 5 항목을 기준으로 한다.
 
 이번 변경 파일(24개):
 
@@ -81,17 +81,17 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. 현재 업로�
 - [x] 미리보기와 썸네일에 색상 처리 후 마스킹 적용, 전체 이미지 편집 복원은 영역 보존
 - [x] 복합 확대/회전/반전/pan, PDF 초기 회전, HiDPI 2배, 모바일 390px 회귀 테스트
 
-페이지당 최대 1,000개 영역, 가로/세로 최소 원본 기준 1 단위, 페이지별 이력 최대 100개다. 작은 영역의 핸들이 겹치면 확대 또는 좌표 입력을 사용한다. Canvas overlay/thumbnail은 편집 미리보기이며 원본 파일을 제거하거나 안전한 결과 파일을 생성하지 않는다. PDF 기준 좌표는 Phase 3의 normalized 1px/pt를 유지한다. 실제 출력 raster 좌표와의 배율 변환/경계 확장/픽셀 합성/잔존 정보 검증은 Phase 5 관문이다.
+페이지당 최대 1,000개 영역, 가로/세로 최소 원본 기준 1 단위, 페이지별 이력 최대 100개다. 작은 영역의 핸들이 겹치면 확대 또는 좌표 입력을 사용한다. Canvas overlay/thumbnail은 편집 미리보기이며 원본 파일을 제거하거나 안전한 결과 파일을 생성하지 않는다. PDF 기준 좌표는 Phase 3의 normalized 1px/pt를 유지한다. 실제 출력 raster 좌표와의 배율 변환/경계 확장/픽셀 합성/잔존 정보 검증은 이후 Phase 5에서 구현했다.
 
 변경 파일: 신규 src/core/masking/MaskEngine.ts, src/hooks/useMaskGesture.ts, src/components/masking/MaskPanel.tsx, src/tests/MaskEngine.test.ts, e2e/masking.spec.ts, docs/screenshots/phase-4.png. 수정 src/stores/editStore.ts, src/components/viewer/DocumentViewer.tsx, src/components/toolbar/EditToolbar.tsx, src/components/sidebar/DocumentPanel.tsx 및 PropertiesPanel.tsx, src/app/App.tsx 및 styles.css, README.md, docs/PROGRESS.md 및 DECISIONS.md. 직접 의존성, 잠금 파일, 기준 문서는 변경하지 않았다.
 
-## Phase 5 — 미착수
+## Phase 5 — 완료 (명시한 출력/검증 범위)
 
-- [ ] 새 픽셀 버퍼에 실제 영구 마스킹 합성
-- [ ] PNG/JPEG, PDF, 페이지 이미지 ZIP 출력
-- [ ] 단일/다중 TIFF 인코더 검증 및 구현 (불가 확인 시 근거/대안 문서화)
-- [ ] 현재/전체 페이지 선택, 출력 형식/페이지 수/진행률/파일명
-- [ ] 재디코딩 픽셀 검사 및 PDF 텍스트/구조/추출 이미지 보안 검증
+- [x] 새 픽셀 버퍼에 실제 불투명 마스킹 합성, 경계 외향 반올림/1픽셀 여백, 보간 없는 회전·반전
+- [x] PNG/JPEG, 새 이미지 기반 다중 PDF, 페이지 PNG/JPEG ZIP 출력
+- [x] baseline RGB8 무압축 단일/다중 TIFF 인코더와 독립 UTIF 재디코딩 검증
+- [x] 현재/전체 범위, 출력 형식/페이지 수/진행 상태/_masked 파일명, 150/300 DPI, 취소/복구/오류 차단
+- [x] PNG 전체 픽셀/JPEG 명시한 오차/TIFF 전체 픽셀/ZIP CRC와 이미지/PDF 텍스트·구조·추출 RGB 검증
 
 ## Phase 6 — 미착수
 
@@ -111,31 +111,26 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 
 ## 가장 최근 검증 결과
 
-환경: Windows, Node 24.12.0, npm 11.6.2.
+Phase 5 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 기준이다.
 
-| 검사                                     | 결과                                                                                      |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 의존성 설치 및 npm ls                    | 깨끗한 npm ci 성공, Linux 대상 dry-run도 통과                                             |
-| npm 보안 검사(최종 설치)                 | 0 vulnerabilities                                                                         |
-| TypeScript typecheck                     | 통과                                                                                      |
-| ESLint (max-warnings 0)                  | 통과                                                                                      |
-| Prettier format:check                    | 통과                                                                                      |
-| Vitest                                   | 11 파일, 129 테스트 통과                                                                  |
-| Production build (`/`)                   | Phase 2 통과, Phase 3–4는 아래 서브경로로 검증                                            |
-| Production build (`/MaskingViewer/`)     | 통과, JS/CSS에 서브경로 적용                                                              |
-| 브라우저 UI 회귀/테마 및 문서 로딩       | 확인                                                                                      |
-| 모바일 390px                             | 확인, 가로 넘침 없음                                                                      |
-| Production 서브경로 E2E                  | Chromium/Edge 각각 20개 통과: 기존 15개 + 마스킹 편집·HiDPI·PDF/TIFF·취소·경계·모바일 5개 |
-| GitHub Actions 원격 실행/실제 Pages 배포 | Phase 3 CI 수정 실행 38369290926 성공. Phase 4는 로컬 검증 완료, 원격 실행 전             |
-| 문서 업로드/탐색                         | 자동 테스트 및 실제 화면 확인                                                             |
-| 문서 편집                                | 좌표/상태/색상 단위 테스트 및 브라우저 실제 픽셀 검증 통과                                |
-| 영구 마스킹 보안                         | 미구현, 미검증                                                                            |
+| 검사                           | 결과                                                                                                        |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 깨끗한 npm ci                  | 성공, 281 packages 설치, audit 0 vulnerabilities                                                            |
+| Linux x64/glibc npm ci dry-run | 통과. 실제 Linux 실행은 아님                                                                                |
+| npm ls --depth=0               | 통과                                                                                                        |
+| TypeScript / ESLint            | 통과                                                                                                        |
+| Vitest                         | 12파일 150개 통과 (Phase 4의 129개 + 출력/자원 관리 21개)                                                   |
+| Production build               | 통과, main 256.72KB / 별도 export 8.99KB / PDF·ZIP lazy chunks                                              |
+| Chromium E2E                   | 최종 26개 통과 (기존 20 + 출력 6)                                                                           |
+| Edge E2E                       | 최종 26개 통과 (기존 20 + 출력 6)                                                                           |
+| 출력 보안                      | fixture의 PNG/JPEG/TIFF/ZIP 재디코딩, PDF 원본 텍스트·주석·첨부·metadata·숨김 구조 제외, 추출 RGB 검사 통과 |
+| 취소/검증 실패 차단            | 재디코딩 손상 주입 시 다운로드 0건, 취소 후 재시도 통과                                                     |
+| 포맷 / diff 검사               | 최종 문서 포함 Prettier 및 git diff --check 통과                                                            |
+| GitHub Actions / 실제 Pages    | Phase 3 수정 dcf7fd0 실행 38369290926 성공. Phase 4–5 원격 미검증                                           |
 
-단위 테스트: UI landmark/테마 회귀, 형식 판별, 크기 한도, TIFF 구조 손상, 페이지 상태, 업로드 취소/혼합 성공·실패, 캐시 eviction, 문서 닫기 이후 늦은 결과 폐기. 브라우저 E2E는 Windows Edge headless에서 실제 생성한 파일로 실행했다. TIFF grayscale fixture의 페이지별 픽셀 값과 orientation 6도 검사한다. CCITT fixture는 단순 white bilevel 패턴이며 복잡한 팩스 문서 코퍼스 검증은 남아 있다. 비밀번호 fixture는 암호 필요 안내를 위한 Standard Security Handler 문서이며 암호 해제 성공 검증은 아니다. 요청 검사로 테스트 PDF에서 외부 전송이 없음을 확인했다. Linux CI의 Phase 3 실행은 E2E 6실패/9통과였다. 아래 012 결정에 따라 수정했으며 Windows의 공식 Chromium과 Edge에서 각각 15개를 통과했다. 이후 Linux 실행 38369290926의 성공을 확인했다. Phase 4 원격 실행은 아직 하지 않았다.
+Phase 5 screenshot phase-5.png는 CAPTURE_PHASE5=1의 PDF 보안 E2E에서 캡처하고 데스크톱 1280×900의 실제 다운로드 완료 화면을 시각 확인했다. 단위 테스트는 16개 회전/양축 반전 조합, 외향 경계/단색/원본 불변/투명 RGB 제거/PDF 비율/TIFF 순서/사전 메모리 예산/취소/캐시 미사용을 검사한다. E2E는 HiDPI 2배에서 실제 다운로드와 재개방, 숨김 영역 반영, 복합 변환·색상, 사용자 단색, PDF 초기 회전과 다중 페이지, 원본 PDF 검색 문자열과 첨부/주석 존재 대비 결과 제거, mobile dark 패널 경계를 검사한다.
 
-Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 및 방향/zoom/clamp/화면 좌표, editStore.test.ts의 페이지 격리/이력/transaction/한도, colorTransform.test.ts의 alpha/grayscale/binary/밝기/대비다. 편집 E2E는 HiDPI 2배 비대칭 픽셀, 밝기·대비/복원/Undo, PDF 초기 회전·페이지별 이력, wheel 원본 좌표 유지·pan, Worker 실패 복구/fallback 및 TIFF thumbnail 일치를 확인했다. Worker timeout 경로 자체의 자동 테스트와 메모리 실측은 남아 있다.
-
-스크린샷: screenshots/phase-1.png, screenshots/phase-2.png, screenshots/phase-3.png, screenshots/phase-4.png. Phase 3 데스크톱 1280×900의 실제 PDF 회전/반전/Grayscale 및 light/dark 레이아웃을 확인했다. E2E 설정은 build base와 일치해야 하며 README의 명령 순서로 재현한다.
+이전 Phase 1–4 검증 및 CI 수정 결과는 아래 이력과 DECISIONS.md 009–013에 보존한다. Phase 2 root build 성공을 Phase 5 root build 성공으로 바꾸지 않는다. Firefox/Safari, 실제 터치, 복잡한 코덱 코퍼스, 큰 파일의 전체 heap과 모든 복구 공격에 대한 보안은 미검증이다.
 
 ## 발견한 문제와 해결
 
@@ -153,9 +148,9 @@ Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 �
 
 ## 알려진 제한과 진행 작업
 
-현재 진행 작업: 없음. Phase 4는 로컬 검증을 완료했으며 이번 커밋으로 보관한다. 푸시는 보류한다. 다음 우선순위는 Phase 5 출력 DPI/메모리 예산 확정, 새 픽셀 버퍼에 편집과 영구 마스킹 합성, 안전한 PNG/JPEG/PDF/ZIP/TIFF 인코딩 및 잔존 정보 검사다.
+현재 진행 작업: 없음. Phase 5 구현·로컬 검증·문서 갱신을 완료했다. 다음 우선순위는 Phase 6의 대용량 메모리 실측, 출력 Worker/스트리밍과 더 즉각적인 취소, Firefox/Safari 및 접근성·오류 경로 확장이다. Phase 4 로컬 커밋을 보존하고 Phase 5는 이번 커밋으로 보관한다. 푸시는 진행하지 않는다.
 
-테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력 인코더, PDF 출력 DPI, 브라우저별 큰 Canvas/메모리 한도 및 worker fallback은 후속 구현 전에 검증해야 한다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 대용량 성능이나 원본 마스킹 보안 완료를 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
+테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 브라우저별 큰 Canvas/실제 heap 상한 및 출력 Worker/스트리밍은 Phase 6에 남아 있다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
 
 ## CI E2E 오류 수정 (2026-10-13)
 
@@ -176,5 +171,19 @@ Phase 3 추가 검증은 geometry.test.ts의 64개 복합 변환 왕복 조합 �
 - Chromium 및 Edge: 각각 20개 통과. 추가 5개는 HiDPI 2배 생성/이동/resize의 한 작업 Undo, Delete/clear/redo, HEX/불투명 픽셀/숨김/색상 처리 이후 유지, 좌표 입력/복원, zoom+rotation+flips+pan, PDF 초기 회전 및 파일/페이지 격리, Escape/pointercancel, 이미지 경계와 모바일 390px를 검사한다.
 - 포맷 검사도 문서 갱신 후 통과했다. screenshot phase-4.png는 PDF/TIFF E2E의 CAPTURE_PHASE4 옵션으로 실제 페이지를 캡처하고 시각 확인했다. 캡처 재현 테스트도 통과했다.
 - HEX 입력 JSX 구문 오류는 수정 후 lint/단위/타입/build를 다시 통과했다. 실패한 검증과 이전 빌드로 진행되다 중단한 테스트는 성공으로 계산하지 않는다.
-- 원본 마스킹 복구 불가/안전한 다운로드는 미구현·미검증이다. Firefox/Safari, 실제 터치 디바이스, 1,000개 영역/많은 페이지의 메모리 실측 및 Phase 4 원격 Linux 실행은 남아 있다.
+- Phase 4 완료 당시 새 픽셀 마스킹/다운로드는 미구현·미검증이었다. 이후 Phase 5의 출력 검증 결과는 위 항목을 기준으로 한다. Firefox/Safari, 실제 터치 디바이스, 1,000개 영역/많은 페이지의 메모리 실측 및 Phase 4 원격 Linux 실행은 남아 있다.
 - 이전 CI 수정 dcf7fd0의 [Actions 실행 38369290926](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38369290926)은 성공했다. Phase 4 코드의 원격 결과와 혼동하지 않는다.
+
+## Phase 5 구현 및 발견한 문제 (2026-10-14)
+
+- 새 기능: 공통 출력 pipeline, 원본 픽셀/지정 DPI 렌더링, 새 버퍼의 색상/불투명 마스킹/정수 기하 합성, PNG/JPEG/PDF/ZIP/TIFF 인코딩과 검증, 다운로드 UI/진행 상태/취소. PDF는 원본 객체를 복사하지 않는다. 검증 실패와 취소 후 파일을 전달하지 않는다.
+- 신규 파일: src/core/export/ExportPipeline.ts, pixels.ts, TiffExporter.ts; src/components/dialogs/ExportPanel.tsx; src/tests/export.test.ts; e2e/export.spec.ts; docs/screenshots/phase-5.png.
+- 수정 파일: src/core/document/DocumentModel.ts, PageRenderer.ts; src/adapters/pdf/PdfAdapter.ts; src/app/App.tsx, styles.css; src/components/masking/MaskPanel.tsx, sidebar/PropertiesPanel.tsx; src/tests/App.test.tsx, PageRenderer.test.ts; e2e/masking.spec.ts; package.json, package-lock.json; README.md, docs/PROGRESS.md, DECISIONS.md. PROJECT.md/AGENTS.md는 변경하지 않았다.
+- pdf-lib 1.17.1을 runtime 의존성으로 이동하고 JSZip 3.10.1을 추가했다. 원본 입력 adapter/geometry/color 커널을 재사용했다. 잠금 파일 Linux dry-run 및 실제 npm ci 모두 통과했다.
+- 새 PDF의 빈 Annots 배열이 보안 검사에 걸려 다운로드를 차단했다. 라이브러리가 추가한 빈 배열을 저장 전에 제거해 출력에 주석 항목 자체를 남기지 않는다. 실제 원본 주석/첨부/텍스트가 존재하는 fixture와 출력의 부재를 PDF.js로 확인했다.
+- 초기 E2E 버튼 이름/fixture 기대값 및 PDF 인쇄 크기의 부동소수점 비교 오류를 수정했다. 소수 크기는 12자리 정확도 비교이며 픽셀 기대값은 그대로 유지한다. 실패 결과는 성공 결과로 계산하지 않는다.
+- 깨끗한 npm ci의 첫 시도는 실행 중인 4173 preview의 Windows 네이티브 모듈 파일 잠금으로 실패했다. 해당 프로젝트 preview만 종료한 후 실제 재설치에 성공했고 최신 build로 서버를 복원했다. npm ci를 npm install로 우회하지 않았다.
+- 제한: 최대 200페이지, 작업 추정 예산 128MiB와 기존 픽셀 한도를 함께 적용한다. JPEG 품질 0.98/마스킹 채널 오차 64 검사, TIFF 무압축 RGB8, 투명 배경 흰색 합성, 마스킹 1픽셀 여백을 UI/README에 안내한다. 큰 300DPI PDF는 예산 초과로 거부할 수 있다. 자동 축소하지 않는다. 원본 파일/세션은 유지하며 출력 파일의 보안 범위와 구분한다.
+- Phase 6의 대용량 Worker/스트리밍/실측, 실제 터치·Safari·Firefox, 원격 CI/Pages는 미검증이다. 이번 변경은 로컬 커밋으로 보관하며 푸시는 진행하지 않는다.
+
+- Phase 5 최종 검증: 타입/ESLint/production 서브경로 build/Prettier/diff 검사 통과, Vitest 12파일 150개, Chromium 26개(36.7초) 및 Edge 26개(37.6초) E2E 모두 통과. 4173 preview는 최신 빌드로 복원했다.
