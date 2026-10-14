@@ -2,7 +2,7 @@
 
 React + TypeScript로 만든 브라우저 문서 편집·영구 마스킹 도구입니다. 이미지와 다중 페이지 PDF/TIFF를 열고 편집한 뒤, 지정 영역을 새 픽셀로 덮은 결과를 다운로드합니다. 선택한 파일을 외부 서버에 업로드하지 않습니다.
 
-[공개 데모](https://heoseongbin.github.io/MaskingViewer/) · [소스 코드](https://github.com/HeoSeongbin/MaskingViewer) · [구현 사례](docs/PORTFOLIO.md) · [아키텍처](docs/ARCHITECTURE.md)
+[웹 애플리케이션](https://heoseongbin.github.io/MaskingViewer/) · [소스 코드](https://github.com/HeoSeongbin/MaskingViewer) · [아키텍처](docs/ARCHITECTURE.md)
 
 현재 릴리스는 **v0.3.0**입니다. Phase 1–7을 명시한 지원 범위에서 구현·검증했습니다. GitHub Actions의 실제 빌드/배포와 공개 HTTPS 사이트에서 Chromium·Edge의 이미지/PDF/TIFF 다운로드·재개방 검사를 통과했습니다. 검증한 커밋과 실행 증거는 [PROGRESS.md](docs/PROGRESS.md)에 기록합니다.
 
@@ -158,4 +158,4 @@ Remove-Item Env:CAPTURE_PHASE7
 
 ## 프로젝트 문서
 
-[PROJECT.md](PROJECT.md): 요구사항 기준 · [AGENTS.md](AGENTS.md): 작업 규칙 · [PROGRESS.md](docs/PROGRESS.md): 단계/검증/배포 증거 · [DECISIONS.md](docs/DECISIONS.md): 기술 결정 · [ARCHITECTURE.md](docs/ARCHITECTURE.md): 좌표/출력/리소스 구조 · [PORTFOLIO.md](docs/PORTFOLIO.md): 구현 사례와 해결한 문제
+[PROJECT.md](PROJECT.md): 요구사항 기준 · [AGENTS.md](AGENTS.md): 작업 규칙 · [PROGRESS.md](docs/PROGRESS.md): 단계/검증/배포 증거 · [DECISIONS.md](docs/DECISIONS.md): 기술 결정 · [ARCHITECTURE.md](docs/ARCHITECTURE.md): 좌표/출력/리소스 구조

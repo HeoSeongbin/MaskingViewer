@@ -6,7 +6,7 @@
 
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
-- 이번 작업은 Phase 7 v0.3.0 릴리스 UI·README/포트폴리오/아키텍처·화면·배포 검사, Pages workflow 소스 전환, 원격 CI 성공 및 실제 HTTPS 파일 출력/재개방을 검증했다. 모든 포맷·브라우저·복구 공격 또는 전체 native heap 검증을 뜻하지 않는다.
+- 이번 작업은 Phase 7 v0.3.0 릴리스 UI·README/기술 문서/아키텍처·화면·배포 검사, Pages workflow 소스 전환, 원격 CI 성공 및 실제 HTTPS 파일 출력/재개방을 검증했다. 모든 포맷·브라우저·복구 공격 또는 전체 native heap 검증을 뜻하지 않는다.
 - PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 0299c12로 로컬 커밋했다. Phase 7의 6c2ac4b와 앞선 3개 커밋을 정상 푸시했다. 원격 CI/Pages와 공개 사이트 검사 증거는 아래에 기록한다.
 
 ## Phase 1 — 완료
@@ -110,13 +110,13 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재
 
 ## Phase 7 — 완료 (명시한 지원·검증 범위)
 
-- [x] 실제 기능 기준 README/PORTFOLIO/ARCHITECTURE 및 release 화면 5개 작성·시각 확인
+- [x] 실제 기능 기준 README/ARCHITECTURE 및 release 화면 5개 작성·시각 확인
 - [x] 좌표/영구 마스킹/다중 페이지/성능 문제 해결 및 검증 범위 문서화
 - [x] 원격 저장소 연결 및 Phase 1 푸시
 - [x] Pages 게시 소스 workflow 전환, 원격 CI 검증 성공 후 실제 배포
 - [x] 실제 HTTPS 사이트에서 Chromium/Edge 이미지·PDF·TIFF 열기/편집/다운로드/재개방 각 3검사 통과
 
-README/포트폴리오/아키텍처/릴리스 화면/workflow와 실제 배포 증거를 갱신했다. Phase 7 완료는 아래 지원 범위와 검사에 한정하며 알려진 미지원/확장 범위는 유지한다.
+README/기술 문서/아키텍처/릴리스 화면/workflow와 실제 배포 증거를 갱신했다. Phase 7 완료는 아래 지원 범위와 검사에 한정하며 알려진 미지원/확장 범위는 유지한다.
 
 ## 가장 최근 검증 결과
 
@@ -231,7 +231,7 @@ Linux CI 표본: PDF 120페이지 20.292초/875,323bytes, TIFF 120페이지 1.24
 
 - Phase 7 로컬 검증: 타입/ESLint/Prettier/Vitest 164개/production 서브경로 build 통과. Chromium 전체 34개 통과, Edge 전체 34개 통과. 아직 원격 릴리스 배포 검증 전이다.
 
-- Phase 7 변경 파일: README.md, docs/ARCHITECTURE.md, PORTFOLIO.md, DECISIONS.md, PROGRESS.md; release screenshot 5개; e2e/release.spec.ts, playwright.deployment.config.ts; scripts/build-info.mjs, src/env.d.ts; src/app/App.tsx, index.html, vite.config.ts, tsconfig.json, package.json/lock, .gitignore, .github/workflows/pages.yml. PROJECT.md/AGENTS.md는 변경하지 않았다.
+- Phase 7 변경 파일: README.md, docs/ARCHITECTURE.md, DECISIONS.md, PROGRESS.md; release screenshot 5개; e2e/release.spec.ts, playwright.deployment.config.ts; scripts/build-info.mjs, src/env.d.ts; src/app/App.tsx, index.html, vite.config.ts, tsconfig.json, package.json/lock, .gitignore, .github/workflows/pages.yml. PROJECT.md/AGENTS.md는 변경하지 않았다.
 
 - 배포 전 최종 로컬 검사: 타입/ESLint/Prettier, Vitest 13파일 164개, Chromium/Edge 전체 34개씩, 루트와 /MaskingViewer/ production build, Linux x64/glibc npm ci dry-run 통과. 원격 CI 및 실제 사이트 검증을 위해 이번 릴리스를 커밋·정상 푸시한다.
 
@@ -242,3 +242,9 @@ Linux CI 표본: PDF 120페이지 20.292초/875,323bytes, TIFF 120페이지 1.24
 - 기준 PROJECT.md/AGENTS.md, 기존 기능/커밋을 보존했다. 원격의 강제 덮어쓰기나 원본 PDF 재사용 없이 배포했다. source/chunk/Worker는 실제 파일 흐름으로 확인했다. CMap/ICC/폰트/WASM 대표 경로는 별도 HTTP 200 검사로 확인했으며 모든 문자·codec 조합의 렌더링 검증을 뜻하지 않는다.
 
 - 공개 PDF.js 리소스 HTTP 검사: cmaps/78-EUC-H.bcmap (2,404bytes), iccs/CGATS001Compat-v2-micro.icc (8,464bytes), standard_fonts/FoxitDingbats.pfb (29,513bytes), wasm/jbig2.wasm (103,671bytes)는 모두 200. 공개 문서 렌더링과 자원 경로 검사를 구분했다.
+
+## 일반 사용을 위한 문서 정리 (2026-10-14)
+
+- 사용자 요청에 따라 PROJECT.md의 프로젝트 목적·Phase 7·기술 문서 표현과 README 링크를 정리하고 전용 소개 문서를 제거했다.
+- 기존 기능 명세, 사용 안내, 아키텍처, 배포/검증 기록 및 실제 화면은 유지한다. 앱 코드와 의존성은 변경하지 않았다.
+- 이번 문서 변경 검증: 관련 표현/삭제 문서 참조 검색 결과 0건, TypeScript 및 Prettier 검사, /MaskingViewer/ production build, git diff --check 통과. 첫 sandbox build는 Worker 파일 realpath EPERM으로 실패했고 일반 권한 재실행에서 성공했다. 문서만 수정하여 단위/E2E는 재실행하지 않았다. 커밋·푸시는 진행하지 않았다.

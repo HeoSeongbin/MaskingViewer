@@ -182,7 +182,7 @@ CI는 같은 E2E에 성능 표본 생성을 켜고 새 test-results/performance 
 
 사용자 화면에서 개발 Phase 번호를 제거하고 브라우저 로컬 처리/실제 기능을 안내한다. package version을 0.3.0으로 올리고 Vite define으로 footer 버전이 같은 값에서 나오게 한다. index.html의 초기 구축 단계 description도 실제 입력/마스킹/출력 기능으로 수정한다. 새로운 기능을 가짜로 추가하지 않는다.
 
-README를 사용 흐름/입출력/실행/기술 선택/좌표/영구 마스킹/제약/검사/배포로 정리했다. ARCHITECTURE.md의 responsibility table/Mermaid/행렬/출력 pipeline과 PORTFOLIO.md의 실제 문제·해결·검증 사례를 분리해 변경 이력 DECISIONS와 혼동하지 않게 한다. release 화면 5개는 생성 fixture의 실제 Playwright gesture/다운로드 상태를 캡처하고 시각 확인한다. 보안/대용량/접근성의 테스트 범위를 축소하거나 절대적 보장을 주장하지 않는다.
+README를 사용 흐름/입출력/실행/기술 선택/좌표/영구 마스킹/제약/검사/배포로 정리했다. ARCHITECTURE.md에 responsibility table/Mermaid/행렬/출력 pipeline을 정리하고, 실제 문제·해결·검증 사례는 변경 이력 DECISIONS와 PROGRESS에서 관리한다. release 화면 5개는 생성 fixture의 실제 Playwright gesture/다운로드 상태를 캡처하고 시각 확인한다. 보안/대용량/접근성의 테스트 범위를 축소하거나 절대적 보장을 주장하지 않는다.
 
 prebuild는 설치 패키지의 PDF.js 리소스 복사 후 build-info.json을 생성한다. version, revision, dirty, basePath, builtAt만 포함하고 원본 파일/사용자 데이터/인증 정보를 넣지 않는다. CI는 GITHUB_SHA, 로컬은 HEAD와 git status dirty를 기록한다. 로컬 미커밋 빌드가 HEAD 코드와 같다고 오인하지 않게 dirty를 표시한다. 생성 파일은 Git에서 제외하고 dist에는 포함한다.
 
@@ -193,3 +193,7 @@ prebuild는 설치 패키지의 PDF.js 리소스 복사 후 build-info.json을 �
 Phase 7의 실제 배포 목표를 위해 로컬 Phase 4–6 커밋을 보존하고 검증된 릴리스 커밋과 함께 normal push한다. 원격 변경을 확인하며 force push/reset으로 기존 작업을 지우지 않는다. Git 저장 인증은 이 저장소 Pages API에만 사용하고 로그/파일에 기록하지 않는다. 공개 artifact와 credential을 섞지 않는다. 마지막 원격 실패가 있으면 실패 원인을 고친 뒤 다시 검사하며 미검증 사이트를 완료로 표시하지 않는다.
 
 Phase 7 결과: Pages API 첫 PATCH 요청은 404였고 공식 PUT으로 수정해 workflow 게시 소스를 확인했다. 기능 릴리스 6c2ac4b의 원격 실행 38524880117 build/deploy가 성공했다. 공개 Pages의 정확한 SHA/dirty=false와 Chromium·Edge 각각 3개 실제 파일 다운로드·재개방 검사를 통과했다. 새 CI 성능 artifact를 실제로 내려받아 phase-7-linux-ci.json에 보관했다. 단순 HTTP 200이나 배포 성공 표시로 완료 처리하지 않았다.
+
+## 017. 일반 사용을 위한 문서 정리 (2026-10-14)
+
+사용자 요청에 따라 프로젝트 목적과 Phase 7을 일반 사용 및 문서화·배포 기준으로 정리했다. 전용 소개 문서와 README 링크를 제거하고, 사용 방법·기능 명세·아키텍처·실제 검증 기록·스크린샷은 유지한다. 앱 코드와 문서 처리 기능은 변경하지 않는다.
