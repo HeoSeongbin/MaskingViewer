@@ -6,3 +6,4 @@ coverage/
 public/pdfjs/
 test-results/
 playwright-report/
+/public/build-info.json

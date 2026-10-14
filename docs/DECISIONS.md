@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–6을 구현했다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5는 014, Phase 6 최적화와 검증 범위는 015를 기준으로 한다.
+현재 Phase 1–6 기능을 구현했고 Phase 7 릴리스·문서·실제 배포 검증을 진행한다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5는 014, Phase 6 최적화와 검증 범위는 015를 기준으로 한다.
 
 ## 001. 계층과 의존성
 
@@ -177,3 +177,17 @@ PageRenderer.diagnostics는 실제 adapter/cache 개수와 cache byte accounting
 재현 fixture는 2000×2000(400만 픽셀) PNG, 120페이지 PDF/TIFF다. 실제 전체 다운로드를 독립 라이브러리로 재개방해 120페이지를 확인하고, PDF/TIFF 탐색은 주변 최대 7개 thumbnail만 제공하는지 검사한다. 8회 큰 PNG 열기/닫기 후 강제 GC를 거친 CDP JS heap 차이를 32MiB 이하 관문으로 두고 baseline/관찰 peak/final 값과 출력 크기/시간을 JSON으로 기록한다. 이 heap은 native Canvas/decoder/GPU 및 Worker 전체 메모리를 포함하지 않으며 순간 peak 전체를 측정한 값도 아니다. 단일 Windows 환경의 표본이며 일반 성능 보장을 만들지 않는다. 400만 픽셀 출력 중 heartbeat가 진행되고 UI event loop의 관찰 간격이 1초 이하인지를 검사한다.
 
 CI는 같은 E2E에 성능 표본 생성을 켜고 새 test-results/performance 경로에서 생성한 보고서만 artifact로 7일 보관하도록 구성한다. 저장소의 과거 보고서를 새 CI 측정 결과로 업로드하지 않는다. 원격 실행/업로드는 아직 하지 않았다. 최신 로컬 숫자와 검증 결과는 PROGRESS.md 및 docs/performance JSON을 기준으로 한다. Firefox/Safari/실제 터치/스크린리더/전체 native heap·다양한 대용량 코퍼스/스트리밍은 남은 확장 검증 범위다. Phase 7 실제 배포 검증을 완료 처리하지 않는다.
+
+## 016. Phase 7 릴리스와 실제 Pages 검증 (2026-10-14)
+
+사용자 화면에서 개발 Phase 번호를 제거하고 브라우저 로컬 처리/실제 기능을 안내한다. package version을 0.3.0으로 올리고 Vite define으로 footer 버전이 같은 값에서 나오게 한다. index.html의 초기 구축 단계 description도 실제 입력/마스킹/출력 기능으로 수정한다. 새로운 기능을 가짜로 추가하지 않는다.
+
+README를 사용 흐름/입출력/실행/기술 선택/좌표/영구 마스킹/제약/검사/배포로 정리했다. ARCHITECTURE.md의 responsibility table/Mermaid/행렬/출력 pipeline과 PORTFOLIO.md의 실제 문제·해결·검증 사례를 분리해 변경 이력 DECISIONS와 혼동하지 않게 한다. release 화면 5개는 생성 fixture의 실제 Playwright gesture/다운로드 상태를 캡처하고 시각 확인한다. 보안/대용량/접근성의 테스트 범위를 축소하거나 절대적 보장을 주장하지 않는다.
+
+prebuild는 설치 패키지의 PDF.js 리소스 복사 후 build-info.json을 생성한다. version, revision, dirty, basePath, builtAt만 포함하고 원본 파일/사용자 데이터/인증 정보를 넣지 않는다. CI는 GITHUB_SHA, 로컬은 HEAD와 git status dirty를 기록한다. 로컬 미커밋 빌드가 HEAD 코드와 같다고 오인하지 않게 dirty를 표시한다. 생성 파일은 Git에서 제외하고 dist에는 포함한다.
+
+기존 production E2E에 release.spec.ts 3개를 추가한다. 별도 playwright.deployment.config.ts는 webServer를 띄우지 않고 DEPLOYMENT_URL의 실제 HTTPS 사이트를 검증한다. EXPECTED_REVISION을 제공하면 build-info의 전체 SHA/dirty=false를 요구한다. 이미지 복합 회전/반전/색상+마스킹 픽셀, PDF 초기 회전+사용자 변환의 다중 이미지 PDF 구조/픽셀, 다중 TIFF 실제 출력·재개방, 외부 HTTP POST 부재 및 모바일을 검사한다. 예제 파일은 테스트 머신에서 로컬 file input으로 제공하며 서버에 업로드하지 않는다. 메타데이터/HTTP 200/CI 성공만으로 실제 앱 검증을 대신하지 않는다.
+
+시작 시 공개 Pages는 HTTP 200의 기존 Phase 3 번들을 제공했다. Pages API의 build_type=legacy와 source=main:/를 확인했다. 이 설정은 기본 pages build and deployment와 앱 workflow를 함께 실행하므로 [GitHub 공식 workflow 안내](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)에 따라 Pages 게시 소스를 workflow로 전환한다. configure-pages@v5를 앱 workflow에 추가하고 기존 모든 install/type/lint/format/unit/build/Chromium E2E 성공 조건을 유지한다. 실제 설정 변경·원격 실행·최종 사이트 SHA와 파일 검사 결과는 PROGRESS.md에 증거로 기록한다.
+
+Phase 7의 실제 배포 목표를 위해 로컬 Phase 4–6 커밋을 보존하고 검증된 릴리스 커밋과 함께 normal push한다. 원격 변경을 확인하며 force push/reset으로 기존 작업을 지우지 않는다. Git 저장 인증은 이 저장소 Pages API에만 사용하고 로그/파일에 기록하지 않는다. 공개 artifact와 credential을 섞지 않는다. 마지막 원격 실패가 있으면 실패 원인을 고친 뒤 다시 검사하며 미검증 사이트를 완료로 표시하지 않는다.

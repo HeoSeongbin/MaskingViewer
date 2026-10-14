@@ -86,7 +86,7 @@ export function App() {
               </div>
             </div>
             <div className="header-actions">
-              <span className="phase-badge">PHASE 06 · 최적화·검증</span>
+              <span className="phase-badge">브라우저 로컬 처리</span>
               {active && <ExportPanel key={active.id} document={active} />}
               <button className="primary-button" onClick={openFiles}>
                 <FileUp size={17} />
@@ -163,7 +163,7 @@ export function App() {
                   <h1>
                     문서를 열고,
                     <br />
-                    <span>페이지를 살펴보세요.</span>
+                    <span>필요한 영역을 가려보세요.</span>
                   </h1>
                   <p>
                     이미지와 다중 페이지 PDF·TIFF를 한 곳에서.
@@ -215,7 +215,9 @@ export function App() {
                 ? `${displayZoom === undefined ? '—' : Math.round(displayZoom * 100)}%${view.mode === 'fit' ? ' 화면 맞춤' : view.mode === 'width' ? ' 너비 맞춤' : ''} · 회전 ${edit.rotation}°`
                 : '화면 미리보기'}
             </span>
-            <span className="status-version">DocumentMask Studio · v0.2.0</span>
+            <span className="status-version">
+              DocumentMask Studio · v{__APP_VERSION__}
+            </span>
           </footer>
         }
       />

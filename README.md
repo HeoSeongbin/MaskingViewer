@@ -1,14 +1,40 @@
 # DocumentMask Studio
 
-React + TypeScript 기반 브라우저 문서 편집 및 영구 마스킹 프로젝트입니다. 원본 파일을 서버에 업로드하지 않는 구조를 목표로 합니다.
+React + TypeScript로 만든 브라우저 문서 편집·영구 마스킹 도구입니다. 이미지와 다중 페이지 PDF/TIFF를 열고 편집한 뒤, 지정 영역을 새 픽셀로 덮은 결과를 다운로드합니다. 선택한 파일을 외부 서버에 업로드하지 않습니다.
 
-현재 **Phase 6 최적화 및 테스트**까지 구현했습니다. 이미지와 다중 페이지 PDF/TIFF 탐색, 확대·이동·회전·반전·색상 처리, 마스킹 영역 편집과 Undo/Redo를 지원합니다. 다운로드 시 원본을 수정하지 않고 새 픽셀에 불투명 마스킹을 합성해 PNG/JPEG/PDF/TIFF 또는 페이지 이미지 ZIP으로 저장합니다.
+[공개 데모](https://heoseongbin.github.io/MaskingViewer/) · [소스 코드](https://github.com/HeoSeongbin/MaskingViewer) · [구현 사례](docs/PORTFOLIO.md) · [아키텍처](docs/ARCHITECTURE.md)
 
-PDF.js, UTIF Worker, Konva/react-konva를 공통 문서 어댑터 구조로 연결했습니다. 원본 크기와 화면 미리보기를 분리하고 필요한 페이지만 렌더링합니다. 파일을 닫거나 업로드를 취소할 수 있으며 오류가 난 파일이 있어도 나머지 파일을 계속 엽니다.
+현재 릴리스는 **v0.3.0**입니다. Phase 1–6 기능과 Phase 7 문서·화면·배포 검사를 준비했습니다. 공개 주소의 최신 릴리스 검증은 진행 중이며, 결과와 검증한 커밋은 [PROGRESS.md](docs/PROGRESS.md)에 기록합니다.
 
-## 실행
+![실제 PDF 마스킹 편집 화면 — 생성 fixture](docs/screenshots/release/editor-light.png)
 
-Node.js 24와 npm을 권장합니다.
+## 주요 기능과 사용 흐름
+
+1. **문서 열기** 또는 Drag & Drop으로 여러 파일을 선택합니다.
+2. 파일 목록과 썸네일에서 페이지를 이동합니다. 페이지 번호 직접 입력도 지원합니다.
+3. 확대/이동/회전/반전/색상을 편집하고 사각형 마스킹을 생성합니다.
+4. 영역을 이동·크기 조절하거나 X/Y/가로/세로·색상을 입력합니다. 목록, 선택 삭제, 전체 삭제, Undo/Redo를 지원합니다.
+5. **다운로드**에서 현재/전체 범위와 형식을 고릅니다. 결과를 검증한 뒤 `_masked` 파일로 다운로드합니다.
+
+숨김은 편집 미리보기만 바꾸며 출력에는 모든 마스킹을 적용합니다. 원본 파일을 공유하는 대신 생성한 결과 파일을 사용하세요. 원본 File과 편집 세션의 정보는 유지하며 새로고침/닫기 시 편집 상태가 초기화됩니다.
+
+| 기능        | 지원                                                                   |
+| ----------- | ---------------------------------------------------------------------- |
+| 입력        | PNG, JPEG, BMP, GIF 첫 프레임, WEBP, PDF, TIFF                         |
+| 다중 페이지 | PDF/TIFF, 페이지별 편집·마스킹·이력 보존                               |
+| 보기        | 1–800%, 화면/너비 맞춤, 포인터 중심 zoom, Hand/휠 이동                 |
+| 편집        | 90° 단위 회전, 화면 기준 양축 반전, 색상 반전·Grayscale·흑백·밝기·대비 |
+| 마스킹      | 검은색·흰색·6자리 HEX의 불투명 사각형, 생성·이동·모서리 resize·삭제    |
+| 출력        | PNG/JPEG, 새 이미지 기반 다중 PDF, 페이지 이미지 ZIP, 단일/다중 TIFF   |
+| 사용성      | 한국어, light/dark, 반응형, 키보드 제어·자동 접근성 검사               |
+
+### 키보드
+
+Ctrl+휠은 포인터 중심 확대, Hand 드래그/휠/Shift+휠·뷰어 방향키는 이동입니다. Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y는 현재 페이지 이력을 되돌립니다. Delete는 선택 마스킹을 삭제하며 Escape는 미완성 드래그를 취소합니다. 다운로드를 열면 첫 형식 선택에 포커스하고 Escape/닫기 후 버튼으로 돌아갑니다. 출력 중 Escape는 취소합니다.
+
+## 실행과 검사
+
+Node.js 24 / npm을 기준으로 검증했습니다.
 
 ```sh
 npm ci
@@ -24,129 +50,112 @@ npm run build
 npm run preview
 ```
 
-PDF.js의 폰트/CMap/WASM/ICC 자원은 predev/prebuild에서 설치된 패키지로부터 자동 복사합니다. worker와 모든 문서 리소스는 로컬 사이트에 포함하며 CDN을 사용하지 않습니다.
+PDF.js worker·CMap·폰트·WASM·ICC 자원은 설치 패키지에서 `predev/prebuild`로 복사합니다. CDN과 문서 업로드 API를 사용하지 않습니다. `public/pdfjs`와 `build-info.json`은 생성물이며 Git에 포함하지 않습니다.
 
-## 지원 범위 및 제한
-
-- 파일당 100MiB, 열린 파일 총 200MiB, 최대 50문서/문서당 5,000페이지입니다. 이미지/TIFF는 페이지당 1,600만 픽셀과 한 변 16,384 제한을 검사합니다.
-- GIF는 첫 프레임만 표시합니다. PDF 암호 입력은 제공하지 않고 보호된 파일에 해제 안내를 표시합니다.
-- TIFF는 classic strip 기반 무압축, CCITT G3/G4, LZW, Deflate, PackBits를 지원합니다. BigTIFF, tile, 16bit, planar-separated 및 JPEG-in-TIFF 등은 아직 지원하지 않습니다. 테스트한 fixture 범위 밖의 변형은 실패할 수 있습니다.
-- SVG/HEIC/AVIF/ICO는 미지원입니다. JPEG 크기 헤더는 첫 1MiB까지 검사하며 확인할 수 없는 파일은 거부합니다.
-- 썸네일은 현재 페이지 주변 최대 7개, 160px로 표시합니다. 화면 미리보기는 최대 1,800px이며 원본 출력 해상도를 뜻하지 않습니다.
-- 테마와 열린 파일은 새로고침 후 초기화됩니다. 테스트 브라우저는 Windows Edge 및 Playwright Chromium이며 다른 브라우저와 대용량 코퍼스 검증은 남아 있습니다.
-
-## 브라우저 자동 테스트
-
-Windows에서는 설치된 Microsoft Edge를 사용합니다. Linux/macOS에서는 `npx playwright install chromium`으로 테스트 브라우저를 준비하세요. fixture는 코드로 생성하므로 민감한 실제 문서가 필요하지 않습니다.
+### Production 브라우저 검사
 
 ```powershell
 $env:VITE_BASE_PATH = '/MaskingViewer/'
+$env:PLAYWRIGHT_CHANNEL = 'chromium'
 npm run build
 npm run test:e2e
-Remove-Item Env:VITE_BASE_PATH
 ```
 
-단위 테스트 164개와 Windows Chromium/Edge 각각 production 서브경로 E2E 31개를 검증했습니다. 기존 입력/탐색/편집/Worker 회귀에 더해 HiDPI 2배 마스킹 생성/이동/resize, gesture 단위 Undo, 삭제/색상/숨김, 원본 좌표·경계·취소, PDF 초기 회전 및 PDF/TIFF 페이지별 상태, 모바일을 검사합니다. 출력 파일의 실제 픽셀 및 PDF 텍스트·주석·첨부·원본 metadata·숨김 레이어 제외를 재현 fixture로 검사합니다. 모든 파일/브라우저 또는 모든 복구 공격에 대한 절대적 보안 보장은 아닙니다.
+bundled Chromium은 `npx playwright install chromium`으로 준비합니다. Windows 기본은 설치된 Edge이며 `PLAYWRIGHT_CHANNEL=msedge`로 지정할 수 있습니다. 직접 생성한 fixture를 사용하므로 실제 개인정보 파일이 필요하지 않습니다. 실패 시 `test-results`의 screenshot/trace를 확인하세요.
 
-![Phase 5 결과 다운로드 화면 (자동 테스트 캡처)](docs/screenshots/phase-5.png)
+## 기술 스택과 구조
 
-## 구조
+| 기술                                      | 선택 목적                                                    |
+| ----------------------------------------- | ------------------------------------------------------------ |
+| React 19 + strict TypeScript 6 + Vite 8   | UI와 처리 로직의 경계, 타입 검사, 정적 빌드·code splitting   |
+| Tailwind 4 + semantic CSS tokens + Lucide | 일관된 light/dark·반응형 문서 작업 화면                      |
+| Zustand 5                                 | 페이지별 serializable 상태·Undo/Redo와 리소스 소유권 분리    |
+| Konva/react-konva                         | 문서와 편집 overlay 표시; 실제 출력 원본과 분리              |
+| PDF.js 6                                  | PDF 페이지/초기 회전 렌더링, 같은 사이트의 전용 Worker       |
+| UTIF + pako                               | 검증한 TIFF codec의 Worker decode, 출력 독립 재검증          |
+| pdf-lib + JSZip                           | 원본을 복사하지 않는 새 이미지 PDF, 검증한 페이지 이미지 ZIP |
+| Web Workers/OffscreenCanvas               | decode·색상·출력 합성/인코딩·검증의 비용 분리와 취소         |
+| Vitest + Playwright + axe                 | 순수 로직, 실제 파일/픽셀/다운로드·배포·접근성 검사          |
 
-`src/app`: 애플리케이션과 디자인 토큰, `components`: UI, `stores`: Zustand 상태, `features`: 사용자 작업, `core`: 문서/좌표/마스킹/출력 로직, `adapters`: 형식별 처리, `workers`: 비동기 처리, `tests`: 자동화 검증. 이후 단계용 디렉터리는 의도적으로 구현이 없는 경계입니다.
-
-공통 페이지 모델로 포맷별 어댑터를 연결하고 원본 페이지 좌표에서 편집 상태를 보존합니다. ExportPanel과 ExportPipeline, 순수 픽셀 합성, 형식별 인코딩을 분리했습니다. 출력은 처리된 새 픽셀만 사용하며 PDF는 새 문서에 이미지만 삽입하므로 원본 검색·복사·링크·벡터·주석·첨부를 유지하지 않습니다.
-
-전체 요구사항은 [PROJECT.md](PROJECT.md), 작업 상태는 [docs/PROGRESS.md](docs/PROGRESS.md), 아키텍처와 제약은 [docs/DECISIONS.md](docs/DECISIONS.md)를 확인하세요.
-
-## GitHub Pages
-
-`.github/workflows/pages.yml`에서 PR 검증과 main 배포를 구성했습니다. 빌드 후 Chromium 브라우저 테스트도 통과해야 배포됩니다. 원격 저장소는 연결했습니다. Settings → Pages → Source를 GitHub Actions로 설정해야 하며 실제 Pages 배포는 아직 검증하지 않았습니다.
-
-Vite는 로컬에서 `/`, CI에서는 저장소 이름으로 계산한 base를 사용합니다. 직접 서브경로 빌드 시 PowerShell에서 다음과 같이 실행합니다.
-
-```powershell
-$env:VITE_BASE_PATH = '/MaskingViewer/'
-npm run build
-Remove-Item Env:VITE_BASE_PATH
+```text
+src/
+  app/                 애플리케이션·디자인 토큰
+  components/          레이아웃·뷰어·도구·속성·다운로드 UI
+  features/file-upload 파일 작업과 문서 수명주기
+  adapters/            raster/PDF/TIFF 정규화
+  core/document/       Loader·공통 모델·페이지 렌더 큐·LRU
+  core/geometry/       affine 정방향·역방향 변환
+  core/masking/        원본 좌표 영역 관리
+  core/image/          공통 색상 커널
+  core/export/         새 픽셀·Worker 조정·인코딩·검증
+  stores/ hooks/       직렬화 상태와 React/입력 연계
+  workers/ tests/      비동기 처리와 단위 검사
+ e2e/ scripts/ docs/   재현 fixture·실제 브라우저 검사·설계/진행 기록
 ```
 
-Phase 2에서 해당 production 서브경로로 실제 PDF/TIFF/이미지 및 worker 로딩을 검증했습니다. 실제 GitHub Pages 호스팅 검증은 남아 있습니다.
+원본 File/Canvas/Worker를 이력마다 복제하지 않습니다. `documentId:pageIndex`로 편집과 이력을 관리하고 loader/adapter/renderer가 포맷 차이와 바이너리 수명주기를 소유합니다. 자세한 데이터 흐름과 Mermaid 도식은 [ARCHITECTURE.md](docs/ARCHITECTURE.md)에 있습니다.
 
-## 문서 편집과 좌표
+## 좌표와 영구 마스킹
 
-도구 모음에서 1–800% 배율을 입력한 뒤 Enter를 누르거나 화면/너비 맞춤을 선택하세요. Ctrl+휠은 포인터를 중심으로 확대하며 손 도구 드래그, 일반 휠, Shift+휠 및 뷰어에 포커스한 방향키로 이동합니다. 화면에서 보이는 방향으로 좌우/상하를 반전합니다.
+마스킹은 화면이 아니라 정규화된 원본 페이지 좌표입니다. `원본 → 회전 → 화면 기준 반전 → 양수 경계 보정 → zoom/pan → Stage` 행렬과 역행렬을 같은 모듈에서 사용합니다. 일반 이미지/TIFF는 원본 px, PDF는 초기 viewport 회전을 적용한 pt 좌표입니다. HiDPI와 최대 1,800px 미리보기는 이 기준과 별개입니다.
 
-색상 반전, Grayscale, 흑백(임계값 128), 밝기/대비를 독립적으로 적용할 수 있습니다. 색상 및 전체 편집 복원이 가능합니다. Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y는 현재 페이지의 편집 이력을 되돌립니다. 문서/페이지 전환 시 편집은 유지되지만 새로고침 또는 문서 닫기 시 삭제됩니다.
+출력은 원본 해상도 또는 PDF 150/300 DPI의 새 RGBA에 색상·흰색 배경·불투명 마스킹을 적용하고, 보간 없는 정수 회전/반전으로 변환합니다. 영역 경계는 바깥 방향 반올림과 사방 1 출력 픽셀 여백을 적용합니다. 투명 배경과 숨은 RGB는 흰색으로 합성됩니다. zoom/pan/숨김/DPR은 출력에 들어가지 않습니다.
 
-좌표 확인 도구는 포인터의 정규화된 원본 좌표를 표시합니다. 원본 → 회전 → 화면 기준 반전 → 양수 경계 보정 → zoom/pan의 affine 행렬과 역행렬을 사용합니다. 일반 이미지/TIFF의 100%는 원본 픽셀당 CSS 1px이며 PDF는 초기 회전이 반영된 pt당 CSS 1px입니다. HiDPI backing buffer와 최대 1,800px 미리보기 해상도는 이 좌표와 별개입니다. PDF 출력은 150/300 DPI로 별도 렌더링하고 pt 좌표를 출력 raster 비율로 변환합니다. zoom/pan/DPR은 저장에 반영하지 않습니다.
+PDF는 새 문서에 처리된 이미지밖에 넣지 않습니다. 원본 PDF 객체·검색 텍스트·주석·첨부·숨김 layer·원본 metadata를 재사용하지 않습니다. 결과에서 텍스트 검색/복사/링크/벡터 기능은 유지되지 않습니다. Stage 스크린샷이나 원본 PDF에 Rectangle 주석을 추가한 파일을 결과로 사용하지 않습니다.
 
-색상 처리는 취소 가능한 로컬 Worker에서 새 픽셀 사본에 적용하며 thumbnail도 같은 색상/기하 커널을 사용합니다. 처리 오류 시 색상 복원으로 재개할 수 있습니다. 확대해도 미리보기의 디코딩 해상도가 자동으로 높아지지는 않습니다.
+| 출력 | 실제 검증과 제한                                                                                           |
+| ---- | ---------------------------------------------------------------------------------------------------------- |
+| PNG  | 재디코딩 크기와 전체 RGBA 정확 비교                                                                        |
+| JPEG | 이미 제거된 픽셀을 품질 0.98로 압축; 불투명·크기·마스킹 채널 오차 ≤64 검사. 정확한 단색은 무손실 형식 사용 |
+| PDF  | 새 RGB8 이미지 구조·크기, 원본 객체 부재, 추출 전체 RGB SHA-256 비교                                       |
+| TIFF | classic little-endian RGB8 무압축, 페이지별 strip·IFD 체인. UTIF로 전체 페이지·픽셀 비교                   |
+| ZIP  | 새 PNG/JPEG만 순서대로 STORE 압축, CRC/항목/바이트 재검증                                                  |
 
-CI와 같은 bundled Chromium으로 Windows에서 브라우저 테스트를 실행할 수도 있습니다.
+검사 실패/취소 시 다운로드하지 않습니다. 지정 mask의 새 결과물에 관한 검증이며 원본 파일 삭제나 모든 복구 공격에 대한 보안 인증은 아닙니다. 원본과 같은 형식은 지원되는 PNG/JPEG/PDF/TIFF에 제공하고 BMP/GIF/WEBP는 PNG가 기본입니다.
+
+![다크 모드에서 실제 다중 PDF 출력 완료](docs/screenshots/release/download.png)
+
+## 지원 한도와 남은 범위
+
+- 입력: 파일당 100MiB, 열린 파일 총 200MiB, 50문서/문서당 5,000페이지. raster/TIFF는 페이지당 1,600만 픽셀·한 변 16,384 한도입니다.
+- 편집: 페이지당 1,000 mask, 최소 가로/세로 원본 기준 1, 페이지별 이력 최대 100개입니다.
+- 출력: 최대 200페이지, 128MiB 추정 작업 예산. 한도 아래 입력도 출력 중간 버퍼 예산 때문에 거부할 수 있습니다. 자동 화질 저하 대신 낮은 PDF DPI/페이지 범위 변경을 안내합니다.
+- Worker 미지원 fallback: 페이지당 100만 픽셀, 중간 결과 총 8MiB. TIFF 입력은 Worker가 필요합니다.
+- GIF 다중 프레임과 암호 PDF 입력은 미지원(해제 안내 제공). TIFF는 classic strip/1·8bit 일부 구성을 지원하며 BigTIFF/tile/16bit/planar-separated/JPEG-in-TIFF는 거부합니다.
+- SVG/HEIC/AVIF/ICO는 미지원. TIFF 출력 압축/EXIF/DPI metadata 보존과 파일 시스템 스트리밍은 제공하지 않습니다.
+- Firefox/Safari·실제 터치·스크린리더, native/Canvas/GPU 전체 메모리와 다양한 대용량 코퍼스는 아직 미검증입니다.
+
+## 성능과 검증 결과
+
+픽셀 Worker는 4.31KB이며 무거운 최종 인코더는 필요할 때 읽습니다. PDF는 원시 RGBA 대신 PNG+RGB 해시만 누적합니다. decode/페이지 처리는 순차이며 주변 7개 thumbnail/48MiB LRU, Canvas 0 크기 해제, bitmap.close, Worker terminate, Blob URL revoke를 적용합니다. 취소/오류/60초 timeout과 단일 출력 lock을 검사합니다.
+
+기존 단위 테스트 **164개**, production 서브경로 Chromium/Edge **각 31개**에 릴리스 검사 **3개**를 추가했습니다. Phase 7 전체 최종 숫자와 실제 배포 증거는 [PROGRESS.md](docs/PROGRESS.md)를 기준으로 합니다. 이전 검증에서 axe WCAG A/AA 태그의 빈 화면/편집/light/dark/mobile 위반 0을 확인했으며 모든 스크린리더의 접근성 인증은 아닙니다.
+
+[Chromium](docs/performance/phase-6-chromium.json) / [Edge](docs/performance/phase-6-msedge.json) 표본은 120페이지 PDF/TIFF 전체 출력과 400만 픽셀 PNG, 8회 반복 닫기의 JS heap을 기록합니다. 강제 GC 후 heap 증가 32MiB 이하를 검사합니다. native/Canvas/GPU/전체 Worker 메모리와 전체 순간 peak를 포함하지 않는 Windows 표본이며 보편 성능 보장은 아닙니다.
+
+## GitHub Pages와 공개 사이트 검증
+
+공개 주소는 https://heoseongbin.github.io/MaskingViewer/ 입니다. Pages 게시 소스를 **GitHub Actions**로 사용하며 build→type/lint/format/unit→Chromium 전체 E2E를 통과한 dist만 배포합니다. 저장소 이름으로 base를 계산하고 PDF.js 리소스·module Worker·lazy 인코더가 같은 사이트에서 로드됩니다. custom domain은 base 정책을 별도로 변경해야 합니다.
+
+`build-info.json`에는 version/commit/base/builtAt 및 로컬 dirty 표시가 생성됩니다. CI는 GITHUB_SHA를 기록합니다. 로컬 dirty 빌드는 commit이 같아도 미커밋 코드가 포함될 수 있으며 공개 릴리스 검증은 정확한 SHA와 dirty=false를 요구합니다. 이 파일의 존재만으로 실제 기능을 검증하지 않습니다.
 
 ```powershell
-npx playwright install chromium
+$env:DEPLOYMENT_URL = 'https://heoseongbin.github.io/MaskingViewer/'
+$env:EXPECTED_REVISION = '<확인할 전체 커밋 SHA>'
 $env:PLAYWRIGHT_CHANNEL = 'chromium'
-npm run test:e2e
+npm run test:deployment
 ```
 
-기본 Windows 실행기는 Edge이며 PLAYWRIGHT_CHANNEL=msedge로 명시할 수도 있습니다. Canvas 픽셀 검사는 Konva의 다음 프레임 그리기를 기다린 후 정확한 색상 값을 검사합니다. CI 실패 시 test-results artifact에서 스크린샷·오류 문맥·trace를 확인할 수 있습니다(7일 보관).
+배포 검사는 서버를 새로 시작하지 않고 실제 HTTPS 사이트에서 이미지/PDF/TIFF를 업로드하고, 마스킹·회전·반전·다운로드·픽셀/페이지 검증과 결과 재개방을 실행합니다. 로컬 검증/원격 CI/공개 사이트 검증은 구분합니다. CI 실패 진단과 새 성능 보고서는 artifact로 7일 보관합니다.
 
-## 마스킹 편집
-
-사각형 마스킹 도구로 문서 안에서 드래그하면 원본 좌표의 영역이 생성되고 선택 도구와 핸들이 활성화됩니다. 선택 도구에서 영역을 이동하거나 모서리로 크기를 바꿀 수 있습니다. 음수 방향 드래그와 모서리 교차를 정규화하고 페이지 경계를 제한합니다. 우측 목록과 X/Y/가로/세로 입력으로도 선택/수정할 수 있습니다.
-
-검은색, 흰색, 색상 선택기 또는 6자리 HEX의 불투명 색상을 사용합니다. Delete 또는 선택 삭제, 현재 페이지 전체 삭제가 가능하며 Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y로 회전·색상·마스킹의 동일한 편집 순서를 되돌립니다. 드래그는 놓는 순간 한 작업으로 기록하고 Escape/pointer 취소는 폐기합니다.
-
-마스킹 숨김은 원본 preview 확인용입니다. 숨김 중 Canvas 편집은 차단하고 영역 데이터는 유지합니다. 전체 이미지 편집 복원도 masks를 보존합니다. 문서/페이지 전환 시 영역은 유지되며 닫기/새로고침 시 초기화됩니다. 페이지당 영역 1,000개, 가로/세로 최소 원본 기준 1단위, 이력 100개입니다. 작은 영역은 확대 또는 좌표 입력으로 수정하세요.
-
-Canvas와 썸네일은 편집 미리보기이며 원본 파일의 정보는 유지합니다. 다운로드 시 숨긴 영역도 새 픽셀에 반영하고 출력 파일을 검증합니다. 원본 파일을 공유하는 대신 생성된 _masked 결과 파일을 사용하세요.
-
-문서용 화면은 기존 PDF/TIFF E2E에서 실제 gesture로 재현할 수 있습니다(서브경로 build 후 실행).
+화면은 실제 fixture 검사에서 재현합니다.
 
 ```powershell
-$env:PLAYWRIGHT_CHANNEL = 'chromium'
-$env:CAPTURE_PHASE4 = '1'
-npm run test:e2e -- e2e/masking.spec.ts --grep 'PDF and TIFF'
-Remove-Item Env:CAPTURE_PHASE4
+$env:CAPTURE_PHASE7 = '1'
+npm run test:e2e -- e2e/release.spec.ts
+Remove-Item Env:CAPTURE_PHASE7
 ```
 
-## 결과 저장과 검증
+## 프로젝트 문서
 
-상단 **다운로드**에서 형식, 현재/전체 페이지, PDF 입력 렌더링 및 PDF 출력 인쇄 DPI를 선택한 뒤 **검증 후 다운로드**를 누르세요. 지원되는 PNG/JPEG/PDF/TIFF 입력은 같은 출력 형식이 기본값이고 BMP/GIF/WEBP 입력은 PNG가 기본입니다. PNG/JPEG 여러 페이지는 page_0001 등의 이미지 ZIP, PDF/TIFF는 하나의 다중 페이지 파일입니다. 파일명은 원본 이름 뒤에 `_masked`를 붙이고 실제 형식의 확장자를 사용합니다.
-
-일반 이미지/TIFF는 원본 픽셀 크기를 유지합니다. PDF 입력은 초기 회전이 반영된 페이지를 150/300 DPI로 다시 렌더링하며, PDF 출력의 물리 크기는 pt 크기를 유지합니다. 이미지에서 PDF로 변환할 때는 선택 DPI가 인쇄 크기를 결정합니다. 저장은 새 픽셀 버퍼의 색상 처리 → 흰색 배경 불투명 합성 → 바깥 방향 반올림/사방 1픽셀 여백 마스킹 → 보간 없는 회전/반전 순서입니다. 투명 배경은 흰색으로 바뀌며 투명 픽셀의 숨은 RGB도 보존하지 않습니다. 안전 여백으로 미리보기보다 1픽셀 더 덮일 수 있습니다.
-
-PNG는 재디코딩 후 전체 RGBA를 정확히 비교합니다. JPEG는 제거된 픽셀을 품질 0.98로 압축하지만 단색/경계가 변할 수 있으며, 크기/불투명/마스킹 영역의 채널 오차 최대 64를 검사합니다. 정확한 단색 출력은 PNG/PDF/TIFF를 사용하세요. PDF는 원본 객체를 복사하지 않고 새 문서를 만들며, 저장 후 이미지 RGB 전체를 추출·비교하고 원본 font/주석/첨부/추가 동작/metadata/숨김 레이어 구조가 없는지 확인합니다. PDF.js E2E는 원본의 검색 가능한 민감 문자열·주석·첨부 존재와 결과에서의 제거를 비교합니다.
-
-TIFF 출력은 classic little-endian RGB 8bit, 무압축, 페이지별 단일 strip, orientation 1의 단일/다중 페이지 형식입니다. 원본 압축·EXIF·DPI metadata는 보존하지 않으며 결과가 더 커질 수 있습니다. UTIF로 재개방해 모든 페이지의 전체 픽셀과 순서를 비교합니다. ZIP은 JSZip으로 새 이미지만 STORE 방식으로 묶고 CRC/항목/바이트를 재검증합니다. 검사 실패 또는 취소 시 다운로드하지 않습니다.
-
-출력은 최대 200페이지, 기존 페이지 크기 한도와 작업 추정 예산 128MiB를 함께 검사합니다. decode 전 픽셀/DPI와 중간 버퍼 추정치, 누적 결과와 최종 파일 크기를 확인하므로 1,600만 픽셀 이하의 입력도 출력 예산에 걸릴 수 있습니다. 이 경우 현재 페이지만 또는 낮은 PDF DPI로 출력하세요. 자동 축소하지 않습니다. 실제 브라우저 전체 메모리 상한은 아니며 Worker 합성/최종 조립과 제한된 대용량 표본 검사를 구현했습니다. 디스크 스트리밍과 전체 native heap 실측은 제공하지 않습니다. 일부 native Canvas/JPEG 검사는 동기 구간이 있습니다.
-
-Phase 5 캡처는 검증된 PDF 출력 테스트에서 재현합니다.
-
-```powershell
-$env:PLAYWRIGHT_CHANNEL = 'chromium'
-$env:CAPTURE_PHASE5 = '1'
-npm run test:e2e -- e2e/export.spec.ts --grep 'PDF export removes'
-Remove-Item Env:CAPTURE_PHASE5
-```
-
-## 최적화·자원 관리·접근성 (Phase 6)
-
-출력 픽셀 합성과 PDF/TIFF/ZIP 조립·검증은 취소 가능한 Worker에서 실행합니다. Worker 시작 번들은 4.31KB이며 최종 인코더는 필요할 때 읽습니다. decode 후 출력용 Canvas를 즉시 해제하고 RGBA는 transferable buffer로 보내 복사 비용을 줄입니다. PDF는 PNG와 페이지별 RGB SHA-256만 유지하고 원시 RGBA 전체를 누적하지 않습니다. 최종 PDF 이미지의 크기/구조/추출 RGB 해시를 검사합니다. 동시에 여러 출력 작업을 실행하지 않으며 Worker 성공/실패/취소/60초 timeout에서 자원을 정리합니다.
-
-OffscreenCanvas가 Worker에서 가능하면 PNG/JPEG 인코딩도 Worker에서 수행합니다. 없으면 픽셀 Worker + DOM Canvas 인코딩을 사용합니다. Worker 자체가 없는 환경은 같은 합성 커널을 비동기 chunk로 실행하되 페이지당 100만 픽셀/중간 결과 총 8MiB로 제한합니다. TIFF 입력은 Worker가 필요합니다. Worker 오류를 무시하고 성공으로 처리하지 않으며 재시도할 수 있습니다.
-
-axe-core의 WCAG A/AA 태그 검사로 빈 화면/편집/light/dark/모바일 다운로드 상태의 자동 위반 0을 확인했습니다. 다운로드 열기 시 출력 형식으로 포커스하고 Escape/닫기 후 버튼으로 돌아갑니다. 출력 중 Escape는 취소합니다. 자동 검사와 키보드 흐름이 모든 스크린리더의 접근성을 인증하는 것은 아닙니다.
-
-120페이지 PDF/TIFF의 탐색과 전체 다운로드, 400만 픽셀 PNG 출력, 8회 큰 PNG 열기/닫기, Worker/Blob URL 0 복귀, 출력 중 heartbeat, 오류·timeout·취소·fallback을 검사합니다. [Chromium 표본](docs/performance/phase-6-chromium.json)과 [Edge 표본](docs/performance/phase-6-msedge.json)은 출력 시간/크기와 baseline/관찰 peak/final JS heap을 담습니다. 강제 GC 뒤 heap 증가 32MiB 이하 관문을 적용합니다. CDP JS heap은 native Canvas/decoder/GPU 및 Worker 전체 메모리를 포함하지 않으며 표본 관찰 peak는 전체 순간 최대값이 아닙니다. Windows의 한 환경에서 생성한 값이고 모든 큰 파일/브라우저 성능 보장이 아닙니다.
-
-```powershell
-$env:PLAYWRIGHT_CHANNEL = 'chromium'
-$env:CAPTURE_PHASE6 = '1'
-npm run test:e2e -- e2e/optimization.spec.ts
-Remove-Item Env:CAPTURE_PHASE6
-```
-
-CI는 새 `test-results/performance` 보고서를 artifact로 7일 보관하도록 구성했습니다. 원격 실행과 업로드는 아직 미검증입니다. Firefox/Safari/실제 터치/스크린리더, 다양한 대용량 코퍼스와 전체 native heap/파일 시스템 스트리밍은 남은 확장 범위입니다. 다음 단계는 Phase 7 포트폴리오 정리 및 실제 Pages 배포 검증입니다.
+[PROJECT.md](PROJECT.md): 요구사항 기준 · [AGENTS.md](AGENTS.md): 작업 규칙 · [PROGRESS.md](docs/PROGRESS.md): 단계/검증/배포 증거 · [DECISIONS.md](docs/DECISIONS.md): 기술 결정 · [ARCHITECTURE.md](docs/ARCHITECTURE.md): 좌표/출력/리소스 구조 · [PORTFOLIO.md](docs/PORTFOLIO.md): 구현 사례와 해결한 문제

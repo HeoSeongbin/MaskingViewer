@@ -6,8 +6,8 @@
 
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
-- 이번 작업은 Phase 6의 출력 Worker/OffscreenCanvas 및 제한된 fallback, PDF 중간 버퍼 절감, 취소·오류·자원 관리, 자동 접근성 검사와 대용량 fixture 검증을 구현했다. 실제 전체 native heap/Firefox·Safari·스크린리더/디스크 스트리밍 검증 범위는 남아 있다. Phase 7 실제 배포 작업은 시작하지 않았다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 이번 로컬 커밋에 포함하며 푸시는 진행하지 않는다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
+- 이번 작업은 Phase 6의 출력 Worker/OffscreenCanvas 및 제한된 fallback, PDF 중간 버퍼 절감, 취소·오류·자원 관리, 자동 접근성 검사와 대용량 fixture 검증을 구현했다. 실제 전체 native heap/Firefox·Safari·스크린리더/디스크 스트리밍 검증 범위는 남아 있다. Phase 7 문서·릴리스 화면·배포 검사를 준비하고 실제 Pages 배포를 검증 중이다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 0299c12로 로컬 커밋했다. Phase 7에서 앞선 3개 커밋과 검증한 릴리스를 함께 배포할 예정이다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
 
 ## Phase 1 — 완료
 
@@ -108,10 +108,10 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재
 
 총 native/Worker/GPU heap과 모든 브라우저/스크린리더·대용량 코퍼스 검증은 완료 처리하지 않는다. 스트리밍/디스크 임시 저장은 미구현이며 한도를 초과하는 결과는 차단한다. 최신 성능 표본은 docs/performance JSON에 보관한다.
 
-## Phase 7 — 미착수
+## Phase 7 — 진행 중 (실제 배포 검증 전)
 
-- [ ] 실제 기능 기준 README/포트폴리오/스크린샷 완성
-- [ ] 좌표/영구 마스킹/다중 페이지/성능 문제 해결 및 검증 결과 문서화
+- [x] 실제 기능 기준 README/PORTFOLIO/ARCHITECTURE 및 release 화면 5개 작성·시각 확인
+- [x] 좌표/영구 마스킹/다중 페이지/성능 문제 해결 및 검증 범위 문서화
 - [x] 원격 저장소 연결 및 Phase 1 푸시
 - [ ] Pages 설정 및 실제 배포
 - [ ] 배포 환경에서 파일 열기/편집/다운로드/재개방 검증
@@ -165,7 +165,7 @@ Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 
 
 ## 알려진 제한과 진행 작업
 
-현재 진행 작업: 없음. Phase 6 구현·로컬 검증·문서 갱신을 완료했다. 다음 우선순위는 Phase 7 실제 기능 기준 포트폴리오 및 Pages 배포/재개방 검증이다. Firefox/Safari·실제 터치·스크린리더 및 전체 native heap/다양한 코퍼스/스트리밍은 확장 과제로 남긴다. Phase 4–5 로컬 커밋을 보존하고 Phase 6은 이번 커밋으로 보관한다. 푸시는 진행하지 않는다.
+현재 진행 작업: Phase 7 공개 배포와 실제 사이트 검증. 문서/화면/릴리스 검사는 준비했고 로컬 전체 회귀를 확인한다. GitHub Pages의 legacy 소스를 Actions로 전환하여 검증한 main 릴리스만 배포할 예정이다. Firefox/Safari·실제 터치·스크린리더 및 전체 native heap/코퍼스/스트리밍은 남은 확장 범위다.
 
 테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 출력 Worker 및 제한된 대용량 JS heap 표본은 Phase 6에서 구현했다. 브라우저별 전체 native heap 상한과 디스크 스트리밍은 여전히 미검증/미구현이다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
 
@@ -216,3 +216,17 @@ Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 
 - Phase 7 원격 배포, native heap 전체 측정, Firefox/Safari·터치·스크린리더, 다양한 큰 TIFF/PDF 코퍼스 및 디스크 스트리밍은 완료 처리하지 않는다. 이번 Phase 6 변경은 로컬 커밋으로 보관하며 푸시는 진행하지 않는다.
 
 - Phase 6 최종 재확인: 실제 npm ci 및 Linux 대상 dry-run, 타입/ESLint/Vitest 164개/Prettier/production 서브경로 build 통과. Chromium·Edge 전체 31개씩 통과했으며 깨끗한 설치 후 CI와 같은 test-results/performance 경로의 120페이지 전체 출력/보고서 생성 검사도 통과했다. 4173 preview를 최신 빌드로 복원했다. 원격 CI 업로드와 실제 배포는 실행하지 않았다.
+
+## Phase 7 준비 (2026-10-14)
+
+- v0.3.0, 사용자 화면에서 개발 Phase 표시 제거, meta description/버전 정리. build-info.json에 version/commit/base/dirty/builtAt 기록. 생성물은 Git 제외.
+- 로컬 production 릴리스 검사 3개 통과: PNG 복합 변환 픽셀과 재개방/외부 POST 부재, 초기 회전 PDF의 전체 출력·이미지 구조·픽셀·재개방, 다중 TIFF 출력·재개방·모바일.
+- 실제 검사 화면 5개(welcome/editor-light/editor-dark/download/mobile)를 docs/screenshots/release에 캡처했다. fixture만 사용했다.
+- 공개 Pages HTTP 200과 기존 Phase 3 번들을 확인했다. API의 build_type=legacy, main 루트 게시 설정을 확인했다. 기존 기본 pages build and deployment와 앱 workflow가 함께 실행되어 검증한 앱 산출물만 배포하도록 GitHub Actions 게시 소스로 전환할 예정이다.
+- 로컬 전체 회귀/원격 CI/공개 사이트 정확한 SHA 및 실제 파일 재검증을 아직 완료 처리하지 않는다.
+
+- Phase 7 로컬 검증: 타입/ESLint/Prettier/Vitest 164개/production 서브경로 build 통과. Chromium 전체 34개 통과, Edge 전체 34개 통과. 아직 원격 릴리스 배포 검증 전이다.
+
+- Phase 7 변경 파일: README.md, docs/ARCHITECTURE.md, PORTFOLIO.md, DECISIONS.md, PROGRESS.md; release screenshot 5개; e2e/release.spec.ts, playwright.deployment.config.ts; scripts/build-info.mjs, src/env.d.ts; src/app/App.tsx, index.html, vite.config.ts, tsconfig.json, package.json/lock, .gitignore, .github/workflows/pages.yml. PROJECT.md/AGENTS.md는 변경하지 않았다.
+
+- 배포 전 최종 로컬 검사: 타입/ESLint/Prettier, Vitest 13파일 164개, Chromium/Edge 전체 34개씩, 루트와 /MaskingViewer/ production build, Linux x64/glibc npm ci dry-run 통과. 원격 CI 및 실제 사이트 검증을 위해 이번 릴리스를 커밋·정상 푸시한다.

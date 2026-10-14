@@ -1,14 +1,14 @@
 {
   "name": "documentmask-studio",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "engines": {
     "node": "^22.13.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
     "predev": "node scripts/copy-pdf-assets.mjs",
-    "prebuild": "node scripts/copy-pdf-assets.mjs",
+    "prebuild": "node scripts/copy-pdf-assets.mjs && node scripts/build-info.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
@@ -18,7 +18,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:deployment": "playwright test --config playwright.deployment.config.ts"
   },
   "dependencies": {
     "jszip": "^3.10.1",
