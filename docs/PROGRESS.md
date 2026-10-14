@@ -6,8 +6,8 @@
 
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
-- 이번 작업은 Phase 6의 출력 Worker/OffscreenCanvas 및 제한된 fallback, PDF 중간 버퍼 절감, 취소·오류·자원 관리, 자동 접근성 검사와 대용량 fixture 검증을 구현했다. 실제 전체 native heap/Firefox·Safari·스크린리더/디스크 스트리밍 검증 범위는 남아 있다. Phase 7 문서·릴리스 화면·배포 검사를 준비하고 실제 Pages 배포를 검증 중이다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 0299c12로 로컬 커밋했다. Phase 7에서 앞선 3개 커밋과 검증한 릴리스를 함께 배포할 예정이다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
+- 이번 작업은 Phase 7 v0.3.0 릴리스 UI·README/포트폴리오/아키텍처·화면·배포 검사, Pages workflow 소스 전환, 원격 CI 성공 및 실제 HTTPS 파일 출력/재개방을 검증했다. 모든 포맷·브라우저·복구 공격 또는 전체 native heap 검증을 뜻하지 않는다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 0299c12로 로컬 커밋했다. Phase 7의 6c2ac4b와 앞선 3개 커밋을 정상 푸시했다. 원격 CI/Pages와 공개 사이트 검사 증거는 아래에 기록한다.
 
 ## Phase 1 — 완료
 
@@ -25,7 +25,7 @@
 - [x] GitHub Actions의 typecheck/lint/format/test/build와 성공 후 main 배포 설정
 - [x] 정적 빌드 및 실제 브라우저 기본 화면 확인
 
-Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재 업로드/탐색/편집/마스킹/다운로드는 실제 동작한다. 실제 GitHub 호스팅 배포는 별도 미검증이다.
+Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재 업로드/탐색/편집/마스킹/다운로드는 실제 동작한다. Phase 1 당시 GitHub 호스팅은 미검증이었으며 Phase 7에서 실제 배포/사용 흐름을 확인했다.
 
 ## Phase 2 — 완료 (명시한 지원 범위)
 
@@ -104,40 +104,44 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재
 - [x] 단위/통합/전체 E2E 회귀와 독립 출력 재검증 유지
 - [x] axe WCAG A/AA 자동 검사, light 텍스트 대비 수정, 다운로드 포커스/Escape 흐름
 - [x] 400만 픽셀 PNG 출력/응답성, 120페이지 PDF/TIFF 탐색·전체 출력·재개방, 반복 닫기 JS heap 표본
-- [x] 성능 보고서 및 CI artifact 구성 (원격 실행/업로드 자체는 미검증)
+- [x] 성능 보고서 및 CI artifact 구성 (Phase 7에서 실제 업로드/내용 확인)
 
 총 native/Worker/GPU heap과 모든 브라우저/스크린리더·대용량 코퍼스 검증은 완료 처리하지 않는다. 스트리밍/디스크 임시 저장은 미구현이며 한도를 초과하는 결과는 차단한다. 최신 성능 표본은 docs/performance JSON에 보관한다.
 
-## Phase 7 — 진행 중 (실제 배포 검증 전)
+## Phase 7 — 완료 (명시한 지원·검증 범위)
 
 - [x] 실제 기능 기준 README/PORTFOLIO/ARCHITECTURE 및 release 화면 5개 작성·시각 확인
 - [x] 좌표/영구 마스킹/다중 페이지/성능 문제 해결 및 검증 범위 문서화
 - [x] 원격 저장소 연결 및 Phase 1 푸시
-- [ ] Pages 설정 및 실제 배포
-- [ ] 배포 환경에서 파일 열기/편집/다운로드/재개방 검증
+- [x] Pages 게시 소스 workflow 전환, 원격 CI 검증 성공 후 실제 배포
+- [x] 실제 HTTPS 사이트에서 Chromium/Edge 이미지·PDF·TIFF 열기/편집/다운로드/재개방 각 3검사 통과
 
-README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7 전체를 완료 처리하지 않는다.
+README/포트폴리오/아키텍처/릴리스 화면/workflow와 실제 배포 증거를 갱신했다. Phase 7 완료는 아래 지원 범위와 검사에 한정하며 알려진 미지원/확장 범위는 유지한다.
 
 ## 가장 최근 검증 결과
 
-Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 기준이다.
+Phase 7 v0.3.0, Windows Node 24.12.0/npm 11.6.2 로컬 및 실제 Ubuntu GitHub Actions/HTTPS Pages 기준이다.
 
-| 검사                           | 결과                                                                                               |
-| ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| 깨끗한 npm ci                  | 성공, 283 packages 설치, audit 0 vulnerabilities                                                   |
-| Linux x64/glibc npm ci dry-run | 통과. 실제 Linux 빌드/실행은 아님                                                                  |
-| npm ls --depth=0               | 통과                                                                                               |
-| TypeScript / ESLint            | 깨끗한 설치 후 최종 통과                                                                           |
-| Vitest                         | 13파일 164개 통과 (Phase 5의 150개 + Worker/캐시/동시 출력 14개)                                   |
-| Production build               | 통과, main 257.30KB / 픽셀 Worker 4.31KB / 인코더 lazy chunks                                      |
-| Chromium E2E                   | 전체 31개 통과 (기존 26 + 최적화/접근성 5)                                                         |
-| Edge E2E                       | 전체 31개 통과 (기존 26 + 최적화/접근성 5)                                                         |
-| 접근성                         | 빈 화면/편집/light/dark/mobile 출력 WCAG A/AA 태그 위반 0, 포커스/Escape 통과                      |
-| 대용량 표본                    | 400만 픽셀 PNG 출력, 120페이지 PDF/TIFF 탐색·전체 출력·재개방, 8회 PNG 열기/닫기 후 heap 관문 통과 |
-| 자원/오류                      | Worker/Blob URL 0 복귀, 오류·60초 timeout 단위 검사, 취소·재시도·fallback·동시 출력 차단 통과      |
-| 포맷 / diff                    | 최종 문서 포함 Prettier/diff 검사 통과                                                             |
-| 원격 CI / Pages                | Phase 3 수정 dcf7fd0 실행 38369290926 성공. Phase 4–6 및 새 performance artifact 원격 미검증       |
+| 검사                                  | 결과                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 설치/lock                             | npm ls 통과. 직접 의존성 변경 없음, version만 0.3.0. Linux dry-run 통과, 원격 실제 npm ci 성공 |
+| TypeScript / ESLint / Prettier / diff | 로컬·원격 통과 (diff는 로컬)                                                                   |
+| Vitest                                | 13파일 164개, 로컬·원격 통과                                                                   |
+| Production build                      | `/`와 `/MaskingViewer/` 로컬 성공, 원격 프로젝트 경로 성공                                     |
+| 로컬 Chromium / Edge                  | 전체 각 34개 통과 (기존 31 + release 3)                                                        |
+| 원격 CI / Pages                       | 6c2ac4b 실행 38524880117 build/deploy success                                                  |
+| 공개 HTTPS Chromium / Edge            | 정확한 SHA+dirty=false, 실제 파일 흐름 각 3개 통과                                             |
+| 공개 PNG                              | 변환 크기 60×100, 마스킹 (15,15) RGB 0,0,0/255, 비마스킹 cyan, 결과 재개방                     |
+| 공개 PDF                              | 초기 회전 + 사용자 회전/flip, 전체 3페이지, font 없음/추출 RGB mask, 결과 재개방               |
+| 공개 TIFF                             | Deflate 입력 Worker, 새 다중 RGB TIFF의 mask 픽셀/3페이지, 자체 adapter 재개방/mobile          |
+| 리소스/프라이버시                     | 릴리스 첫 흐름에서 HTTP 4xx/5xx 및 외부 POST 0, PDF/TIFF/export module Worker 실제 동작        |
+| 성능 artifact                         | phase-6-performance 실제 업로드 및 Linux JSON 내용 확인, phase-7-linux-ci.json 보관            |
 
+공개 주소: https://heoseongbin.github.io/MaskingViewer/. 검증한 기능 릴리스 SHA: 6c2ac4b79d535b9de1dfa671ca9195b3ea3252d1. build-info: version=0.3.0, basePath=/MaskingViewer/, dirty=false, builtAt=2026-10-14T06:53:52.787Z. 기능 릴리스 배포 검증 기록을 보관하는 문서 커밋은 별도로 작성한다.
+
+실행 증거: [Validate and deploy Pages 38524880117](https://github.com/HeoSeongbin/MaskingViewer/actions/runs/38524880117). build와 deploy가 모두 success였고 github-pages artifact(3,260,706bytes), performance artifact(470bytes)를 확인했다. 공개 Chromium 3개(16.9초), Edge 3개(11.6초)가 실제 다운로드와 재개방을 통과했다. 메타데이터 확인만으로 완료 처리하지 않았다.
+
+Linux CI 표본: PDF 120페이지 20.292초/875,323bytes, TIFF 120페이지 1.247초/447,848bytes. baseline/관찰 peak/final CDP JS heap은 1,612,352 / 8,588,956 / 6,476,328bytes. 원본은 docs/performance/phase-7-linux-ci.json이며 아래 Windows 표본과 별개다. 운영체제/폰트/runner 차이 때문에 파일 크기·시간을 보편적 수치로 해석하지 않는다.
 출력 보안 검사는 Phase 5의 기존 6개 E2E를 유지한다. Worker/OffscreenCanvas 경로에서도 PNG/JPEG/TIFF/ZIP 재디코딩, PDF 원본 텍스트·주석·첨부·metadata·숨김 구조 제외, 추출 RGB를 검사한다. 이전 단계의 테스트 결과는 아래 이력과 DECISIONS.md에 보존한다.
 
 성능 표본(1회 Windows 실행, 보편 성능 보장 아님):
@@ -165,9 +169,9 @@ Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 
 
 ## 알려진 제한과 진행 작업
 
-현재 진행 작업: Phase 7 공개 배포와 실제 사이트 검증. 문서/화면/릴리스 검사는 준비했고 로컬 전체 회귀를 확인한다. GitHub Pages의 legacy 소스를 Actions로 전환하여 검증한 main 릴리스만 배포할 예정이다. Firefox/Safari·실제 터치·스크린리더 및 전체 native heap/코퍼스/스트리밍은 남은 확장 범위다.
+현재 진행 작업: 없음. Phase 1–7은 명시한 지원 범위로 구현·검증했다. 최종 배포 증거 문서를 반영한다. Firefox/Safari·실제 터치·스크린리더, GIF frame/암호 PDF/추가 TIFF 변형, 전체 native heap/다양한 코퍼스/스트리밍은 남은 확장 범위다.
 
-테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 출력 Worker 및 제한된 대용량 JS heap 표본은 Phase 6에서 구현했다. 브라우저별 전체 native heap 상한과 디스크 스트리밍은 여전히 미검증/미구현이다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
+테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 출력 Worker 및 제한된 대용량 JS heap 표본은 Phase 6에서 구현했다. 브라우저별 전체 native heap 상한과 디스크 스트리밍은 여전히 미검증/미구현이다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 Pages의 명시한 이미지/PDF/TIFF 흐름은 Phase 7에서 확인했다.
 
 ## CI E2E 오류 수정 (2026-10-13)
 
@@ -230,3 +234,11 @@ Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 
 - Phase 7 변경 파일: README.md, docs/ARCHITECTURE.md, PORTFOLIO.md, DECISIONS.md, PROGRESS.md; release screenshot 5개; e2e/release.spec.ts, playwright.deployment.config.ts; scripts/build-info.mjs, src/env.d.ts; src/app/App.tsx, index.html, vite.config.ts, tsconfig.json, package.json/lock, .gitignore, .github/workflows/pages.yml. PROJECT.md/AGENTS.md는 변경하지 않았다.
 
 - 배포 전 최종 로컬 검사: 타입/ESLint/Prettier, Vitest 13파일 164개, Chromium/Edge 전체 34개씩, 루트와 /MaskingViewer/ production build, Linux x64/glibc npm ci dry-run 통과. 원격 CI 및 실제 사이트 검증을 위해 이번 릴리스를 커밋·정상 푸시한다.
+
+## Phase 7 배포 완료 및 문제 해결 (2026-10-14)
+
+- Pages 설정 변경의 첫 요청은 잘못된 PATCH 방식으로 404가 발생했다. 공식 REST API의 PUT으로 수정해 build_type=workflow를 다시 읽어 확인했다. 기존 브랜치 자동 배포와의 중복을 제거했다. 인증 정보는 로그/파일에 저장하지 않았다.
+- 6c2ac4b와 Phase 4–6을 정상 푸시했다. 원격 CI의 build/deploy success, 새 performance artifact의 실제 내용, 공개 사이트 SHA/dirty=false와 실제 파일 검증을 확인했다.
+- 기준 PROJECT.md/AGENTS.md, 기존 기능/커밋을 보존했다. 원격의 강제 덮어쓰기나 원본 PDF 재사용 없이 배포했다. source/chunk/Worker는 실제 파일 흐름으로 확인했다. CMap/ICC/폰트/WASM 대표 경로는 별도 HTTP 200 검사로 확인했으며 모든 문자·codec 조합의 렌더링 검증을 뜻하지 않는다.
+
+- 공개 PDF.js 리소스 HTTP 검사: cmaps/78-EUC-H.bcmap (2,404bytes), iccs/CGATS001Compat-v2-micro.icc (8,464bytes), standard_fonts/FoxitDingbats.pfb (29,513bytes), wasm/jbig2.wasm (103,671bytes)는 모두 200. 공개 문서 렌더링과 자원 경로 검사를 구분했다.

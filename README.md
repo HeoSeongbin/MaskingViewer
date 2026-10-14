@@ -4,7 +4,7 @@ React + TypeScript로 만든 브라우저 문서 편집·영구 마스킹 도구
 
 [공개 데모](https://heoseongbin.github.io/MaskingViewer/) · [소스 코드](https://github.com/HeoSeongbin/MaskingViewer) · [구현 사례](docs/PORTFOLIO.md) · [아키텍처](docs/ARCHITECTURE.md)
 
-현재 릴리스는 **v0.3.0**입니다. Phase 1–6 기능과 Phase 7 문서·화면·배포 검사를 준비했습니다. 공개 주소의 최신 릴리스 검증은 진행 중이며, 결과와 검증한 커밋은 [PROGRESS.md](docs/PROGRESS.md)에 기록합니다.
+현재 릴리스는 **v0.3.0**입니다. Phase 1–7을 명시한 지원 범위에서 구현·검증했습니다. GitHub Actions의 실제 빌드/배포와 공개 HTTPS 사이트에서 Chromium·Edge의 이미지/PDF/TIFF 다운로드·재개방 검사를 통과했습니다. 검증한 커밋과 실행 증거는 [PROGRESS.md](docs/PROGRESS.md)에 기록합니다.
 
 ![실제 PDF 마스킹 편집 화면 — 생성 fixture](docs/screenshots/release/editor-light.png)
 
@@ -90,7 +90,7 @@ src/
   core/export/         새 픽셀·Worker 조정·인코딩·검증
   stores/ hooks/       직렬화 상태와 React/입력 연계
   workers/ tests/      비동기 처리와 단위 검사
- e2e/ scripts/ docs/   재현 fixture·실제 브라우저 검사·설계/진행 기록
+e2e/ scripts/ docs/   재현 fixture·실제 브라우저 검사·설계/진행 기록
 ```
 
 원본 File/Canvas/Worker를 이력마다 복제하지 않습니다. `documentId:pageIndex`로 편집과 이력을 관리하고 loader/adapter/renderer가 포맷 차이와 바이너리 수명주기를 소유합니다. 자세한 데이터 흐름과 Mermaid 도식은 [ARCHITECTURE.md](docs/ARCHITECTURE.md)에 있습니다.
@@ -129,9 +129,9 @@ PDF는 새 문서에 처리된 이미지밖에 넣지 않습니다. 원본 PDF �
 
 픽셀 Worker는 4.31KB이며 무거운 최종 인코더는 필요할 때 읽습니다. PDF는 원시 RGBA 대신 PNG+RGB 해시만 누적합니다. decode/페이지 처리는 순차이며 주변 7개 thumbnail/48MiB LRU, Canvas 0 크기 해제, bitmap.close, Worker terminate, Blob URL revoke를 적용합니다. 취소/오류/60초 timeout과 단일 출력 lock을 검사합니다.
 
-기존 단위 테스트 **164개**, production 서브경로 Chromium/Edge **각 31개**에 릴리스 검사 **3개**를 추가했습니다. Phase 7 전체 최종 숫자와 실제 배포 증거는 [PROGRESS.md](docs/PROGRESS.md)를 기준으로 합니다. 이전 검증에서 axe WCAG A/AA 태그의 빈 화면/편집/light/dark/mobile 위반 0을 확인했으며 모든 스크린리더의 접근성 인증은 아닙니다.
+단위 테스트 **164개**, production 서브경로 Chromium/Edge **각 34개**가 통과했습니다. Linux GitHub Actions의 전체 검증·배포도 성공했고 공개 Pages에서 별도 릴리스 검사 **각 3개**가 통과했습니다. 실제 배포 증거는 [PROGRESS.md](docs/PROGRESS.md)를 기준으로 합니다. 이전 검증에서 axe WCAG A/AA 태그의 빈 화면/편집/light/dark/mobile 위반 0을 확인했으며 모든 스크린리더의 접근성 인증은 아닙니다.
 
-[Chromium](docs/performance/phase-6-chromium.json) / [Edge](docs/performance/phase-6-msedge.json) 표본은 120페이지 PDF/TIFF 전체 출력과 400만 픽셀 PNG, 8회 반복 닫기의 JS heap을 기록합니다. 강제 GC 후 heap 증가 32MiB 이하를 검사합니다. native/Canvas/GPU/전체 Worker 메모리와 전체 순간 peak를 포함하지 않는 Windows 표본이며 보편 성능 보장은 아닙니다.
+[Chromium](docs/performance/phase-6-chromium.json) / [Edge](docs/performance/phase-6-msedge.json) 표본은 120페이지 PDF/TIFF 전체 출력과 400만 픽셀 PNG, 8회 반복 닫기의 JS heap을 기록합니다. 강제 GC 후 heap 증가 32MiB 이하를 검사합니다. native/Canvas/GPU/전체 Worker 메모리와 전체 순간 peak를 포함하지 않는 표본이며 보편 성능 보장은 아닙니다. [실제 Linux CI 표본](docs/performance/phase-7-linux-ci.json)도 artifact에서 내려받아 보관했습니다.
 
 ## GitHub Pages와 공개 사이트 검증
 

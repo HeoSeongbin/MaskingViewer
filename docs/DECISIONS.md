@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–6 기능을 구현했고 Phase 7 릴리스·문서·실제 배포 검증을 진행한다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5는 014, Phase 6 최적화와 검증 범위는 015를 기준으로 한다.
+현재 Phase 1–7을 명시한 지원·검증 범위에서 구현했다. Phase 7 실제 원격 검증 증거는 PROGRESS.md에 기록한다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5는 014, Phase 6 최적화와 검증 범위는 015를 기준으로 한다.
 
 ## 001. 계층과 의존성
 
@@ -191,3 +191,5 @@ prebuild는 설치 패키지의 PDF.js 리소스 복사 후 build-info.json을 �
 시작 시 공개 Pages는 HTTP 200의 기존 Phase 3 번들을 제공했다. Pages API의 build_type=legacy와 source=main:/를 확인했다. 이 설정은 기본 pages build and deployment와 앱 workflow를 함께 실행하므로 [GitHub 공식 workflow 안내](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)에 따라 Pages 게시 소스를 workflow로 전환한다. configure-pages@v5를 앱 workflow에 추가하고 기존 모든 install/type/lint/format/unit/build/Chromium E2E 성공 조건을 유지한다. 실제 설정 변경·원격 실행·최종 사이트 SHA와 파일 검사 결과는 PROGRESS.md에 증거로 기록한다.
 
 Phase 7의 실제 배포 목표를 위해 로컬 Phase 4–6 커밋을 보존하고 검증된 릴리스 커밋과 함께 normal push한다. 원격 변경을 확인하며 force push/reset으로 기존 작업을 지우지 않는다. Git 저장 인증은 이 저장소 Pages API에만 사용하고 로그/파일에 기록하지 않는다. 공개 artifact와 credential을 섞지 않는다. 마지막 원격 실패가 있으면 실패 원인을 고친 뒤 다시 검사하며 미검증 사이트를 완료로 표시하지 않는다.
+
+Phase 7 결과: Pages API 첫 PATCH 요청은 404였고 공식 PUT으로 수정해 workflow 게시 소스를 확인했다. 기능 릴리스 6c2ac4b의 원격 실행 38524880117 build/deploy가 성공했다. 공개 Pages의 정확한 SHA/dirty=false와 Chromium·Edge 각각 3개 실제 파일 다운로드·재개방 검사를 통과했다. 새 CI 성능 artifact를 실제로 내려받아 phase-7-linux-ci.json에 보관했다. 단순 HTTP 200이나 배포 성공 표시로 완료 처리하지 않았다.

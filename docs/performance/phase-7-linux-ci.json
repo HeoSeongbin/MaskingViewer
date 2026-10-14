@@ -1,0 +1,23 @@
+{
+  "browser": "chromium",
+  "viewport": "1280x900",
+  "pngPixels": 4000000,
+  "repeatedCloseCycles": 8,
+  "pdfPages": 120,
+  "tiffPages": 120,
+  "outputs": {
+    "many.pdf": {
+      "bytes": 875323,
+      "elapsedMs": 20292
+    },
+    "many.tif": {
+      "bytes": 447848,
+      "elapsedMs": 1247
+    }
+  },
+  "elapsedMs": 24219,
+  "baselineJsHeapBytes": 1612352,
+  "observedPeakJsHeapBytes": 8588956,
+  "finalJsHeapBytes": 6476328,
+  "note": "CDP JS heap samples exclude native Canvas/decoder/GPU memory; not a total memory limit or universal benchmark."
+}
