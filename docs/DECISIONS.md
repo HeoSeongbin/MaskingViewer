@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–5를 구현했다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5 출력과 검증 범위는 014를 기준으로 한다.
+현재 Phase 1–6을 구현했다. 초기 설계와 실제 구현의 차이는 단계별 결정에 기록한다. Phase 2는 009, Phase 3은 011, Phase 4는 013, Phase 5는 014, Phase 6 최적화와 검증 범위는 015를 기준으로 한다.
 
 ## 001. 계층과 의존성
 
@@ -155,3 +155,25 @@ PNG는 새 Canvas 인코딩 후 createImageBitmap으로 재개방하고 크기�
 한 번에 최대 200페이지, 기존 페이지당 1,600만 픽셀/한 변 16,384 한도와 출력 추정 예산 128MiB를 함께 적용한다. decode 전에 metadata×DPI로 픽셀 예산을 검사한다. 중간 버퍼를 픽셀당 20바이트로 보수적으로 추정하고 누적 결과/최종 파일의 3배도 검사한다. 페이지 decode/합성은 순차이며 PDF/TIFF 최종 조립 및 검증을 위한 제한된 픽셀/이미지는 보관한다. 이 계산은 decoder/native/GC/동시 preview를 포함한 실제 전체 heap 상한이 아니다. 큰 파일의 Worker 합성, 스트리밍, heap 실측과 더 즉각적인 취소는 Phase 6에 남긴다. export/인코더 라이브러리는 lazy import하여 초기 bundle 증가를 제한했다.
 
 검증은 PROGRESS.md의 Phase 5 최종 결과를 기준으로 한다. 신규 단위 테스트는 모든 16개 회전/양축 반전 조합의 실제 마스킹 픽셀, 원본 불변, PDF 비율, 투명 RGB 제거, TIFF 독립 재디코딩 및 export 캐시/사전 예산/취소를 검사한다. E2E는 실제 다운로드를 읽어 PNG/JPEG/TIFF/ZIP/PDF 결과를 검사하고 PDF.js로 원본의 검색 가능 문자열/주석/첨부 존재와 출력의 제거를 비교한다. 손상된 재디코딩 결과는 다운로드가 차단되고 취소 후 재시도도 가능해야 한다. 자동화 fixture 범위 밖의 모든 정보 복구 공격/모든 브라우저에 대한 절대적 보안을 선언하지 않는다.
+
+## 015. Phase 6 출력 Worker, 메모리와 접근성 (2026-10-14)
+
+출력 Worker는 페이지 합성과 최종 파일 조립/검증의 두 작업을 담당한다. ExportWorker는 AbortSignal/60초 timeout/시작·통신·처리 오류와 종료를 중앙화하며, 모든 성공/실패/취소에서 handler/timer/listener를 제거하고 terminate한다. 원본 File을 전달하지 않고 어댑터가 새로 만든 RGBA ArrayBuffer를 [transferable](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Transferable_objects)로 전달한다. 미리보기나 캐시의 Canvas는 전달/수정하지 않는다. decode 후 getImageData를 얻자마자 출력용 Canvas를 0 크기로 해제한다. 출력을 동시에 여러 개 시작하지 못하도록 pipeline lock을 추가하고 finally에서 해제한다.
+
+Vite worker.format은 es다. 픽셀 합성 Worker는 4.31KB이고 FinalizeExport/PDF/TIFF/ZIP 라이브러리는 최종 조립 때 동적으로 읽는다. 최초 단일 Worker 번들 582KB를 매 페이지 시작 시 파싱하는 비용을 줄였다. 기존 TIFF/색상 Worker도 module 방식으로 실제 서브경로에서 회귀 검사한다. 필요 없는 Worker/라이브러리는 초기 앱에서 읽지 않는다.
+
+Worker에서 [OffscreenCanvas.convertToBlob](https://developer.mozilla.org/en-US/docs/Web/API/OffscreenCanvas/convertToBlob)을 지원하면 PNG/JPEG를 인코딩한다. 없으면 Worker는 픽셀 합성만 수행하고 DOM Canvas가 인코딩한다. worker 유무와 무관하게 PNG/JPEG 결과는 main의 새 Canvas/ImageBitmap으로 재개방해 검증하며 bitmap.close/Canvas 0 크기를 유지한다. PNG 전체 비교는 1MiB 단위로 event loop에 양보하고 취소를 검사한다. 일부 native Canvas/JPEG 검사는 동기 구간이 있으므로 무중단 반응성을 모든 브라우저에 보장하지 않는다.
+
+Worker 자체가 없으면 동일한 composePixelSteps 커널을 비동기 chunk로 실행한다. 색상/불투명화는 256KiB, mask/기하 작업은 32행 단위로 양보하며 순수 동기 composePixels와 동일 결과다. fallback은 페이지당 100만 픽셀/누적 결과 8MiB로 제한하고 metadata 단계에서 큰 출력 decode를 막는다. 다른 환경의 일시적인 Worker 실패는 자동 fallback으로 숨기지 않고 오류로 차단해 사용자 재시도를 허용한다. TIFF 입력은 기존처럼 Worker가 필요하다.
+
+PDF 결과 검증은 마스킹 완료 RGB 전체의 SHA-256과 크기를 페이지별로 저장한다. PNG와 해시만 유지하며 각 페이지의 원시 RGBA를 전체 출력 종료까지 보관하지 않는다. 최종 Worker에서 저장된 PDF의 RGB8 이미지 크기/구조를 검사하고 Flate RGB를 추출하여 전체 길이/해시를 비교한다. 기존 원본 font·주석·첨부·metadata·숨김 객체 부재 검사는 유지한다. PDF는 원본을 load/copy/embed하지 않는 새 이미지 문서다. 이 변경은 픽셀 비교의 기준을 제거하지 않고 보관량을 줄인다. PDF/TIFF/ZIP 최종 인코딩·검증은 Worker를 terminate하여 즉시 취소할 수 있다.
+
+TIFF/ZIP는 최종 조립에 필요한 제한된 결과를 보관한다. 128MiB 추정 작업 예산/200페이지/기존 픽셀 한도는 유지한다. 파일 시스템 스트리밍이나 디스크 임시 저장은 구현하지 않는다. 브라우저에서 Blob으로 전달하는 파일은 전체 결과 버퍼가 필요하므로 한도를 넘으면 차단한다. 이는 PROJECT.md의 메모리 한도/오류 처리 요구를 위한 제한이며 무제한 문서 지원을 뜻하지 않는다.
+
+PageRenderer.diagnostics는 실제 adapter/cache 개수와 cache byte accounting을 읽는 메서드다. 임의 성공 상태를 만들지 않는다. 20회 문서 열기/캐시/닫기 단위 검사에서 캐시가 예산 안에 유지되고 종료 후 0으로 회수되는지 확인한다. UI가 아직 참조하는 Canvas의 강제 파괴는 하지 않으며 GC/native 메모리와 논리 캐시 accounting을 구분한다. 출력 Blob URL은 전달 후 기존 revoke 타이머로 정리하고 실제 E2E에서 URL/Worker 생성·종료 계수를 추적해 0 복귀를 검사한다.
+
+접근성은 [axe-core](https://github.com/dequelabs/axe-core)의 Playwright 패키지 4.13.0을 devDependency로 추가해 WCAG 2/2.1/2.2 A·AA 해당 태그를 검사한다. 빈 화면/편집/light/dark/모바일 다운로드 상태에서 위반 0을 확인하며 규칙을 제외하지 않는다. light의 accent/tint 및 muted/background 대비 문제는 색상 토큰을 #076f64/#596879로 바꿔 해결했다. 다운로드 열기 시 첫 select로 포커스, 닫기/Escape 시 trigger로 복귀, 출력 중 Escape는 취소로 처리한다. 자동 검사 및 실제 키보드 흐름이지 모든 스크린리더 조합의 접근성 인증은 아니다.
+
+재현 fixture는 2000×2000(400만 픽셀) PNG, 120페이지 PDF/TIFF다. 실제 전체 다운로드를 독립 라이브러리로 재개방해 120페이지를 확인하고, PDF/TIFF 탐색은 주변 최대 7개 thumbnail만 제공하는지 검사한다. 8회 큰 PNG 열기/닫기 후 강제 GC를 거친 CDP JS heap 차이를 32MiB 이하 관문으로 두고 baseline/관찰 peak/final 값과 출력 크기/시간을 JSON으로 기록한다. 이 heap은 native Canvas/decoder/GPU 및 Worker 전체 메모리를 포함하지 않으며 순간 peak 전체를 측정한 값도 아니다. 단일 Windows 환경의 표본이며 일반 성능 보장을 만들지 않는다. 400만 픽셀 출력 중 heartbeat가 진행되고 UI event loop의 관찰 간격이 1초 이하인지를 검사한다.
+
+CI는 같은 E2E에 성능 표본 생성을 켜고 새 test-results/performance 경로에서 생성한 보고서만 artifact로 7일 보관하도록 구성한다. 저장소의 과거 보고서를 새 CI 측정 결과로 업로드하지 않는다. 원격 실행/업로드는 아직 하지 않았다. 최신 로컬 숫자와 검증 결과는 PROGRESS.md 및 docs/performance JSON을 기준으로 한다. Firefox/Safari/실제 터치/스크린리더/전체 native heap·다양한 대용량 코퍼스/스트리밍은 남은 확장 검증 범위다. Phase 7 실제 배포 검증을 완료 처리하지 않는다.

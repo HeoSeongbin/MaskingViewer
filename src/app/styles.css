@@ -240,9 +240,9 @@ button {
   --bg: #f4f6f8;
   --surface: #fff;
   --text: #202d3b;
-  --muted: #667586;
+  --muted: #596879;
   --line: #e2e8ee;
-  --accent: #087f72;
+  --accent: #076f64;
   --tint: #eaf5f1;
   color: var(--text);
   background: var(--bg);

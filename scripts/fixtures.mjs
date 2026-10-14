@@ -96,13 +96,13 @@ export async function createFixtures(directory) {
   await writeFile(`${directory}/unsafe.svg`, '<svg/>');
 }
 
-export function buildTiff(compression = 1) {
+export function buildTiff(compression = 1, count = 3) {
   const w = 40,
     h = 30;
   const entries = 11;
   const ifdSize = 2 + entries * 12 + 4;
   const blocks = [];
-  for (let page = 0; page < 3; page++) {
+  for (let page = 0; page < count; page++) {
     const raw = Buffer.alloc(w * h);
     raw.fill(page === 0 ? 40 : page === 1 ? 140 : 230);
     if (compression === 3 || compression === 4) {
@@ -139,13 +139,13 @@ export function buildTiff(compression = 1) {
     } else blocks.push(raw);
   }
   const buffer = Buffer.alloc(
-    8 + 3 * ifdSize + blocks.reduce((sum, b) => sum + b.length, 0),
+    8 + count * ifdSize + blocks.reduce((sum, b) => sum + b.length, 0),
   );
   buffer.write('II');
   buffer.writeUInt16LE(42, 2);
   buffer.writeUInt32LE(8, 4);
-  let pixelOffset = 8 + 3 * ifdSize;
-  for (let i = 0; i < 3; i++) {
+  let pixelOffset = 8 + count * ifdSize;
+  for (let i = 0; i < count; i++) {
     const offset = 8 + i * ifdSize;
     buffer.writeUInt16LE(entries, offset);
     const tags = [
@@ -170,7 +170,7 @@ export function buildTiff(compression = 1) {
       else buffer.writeUInt32LE(value, start + 8);
     });
     buffer.writeUInt32LE(
-      i === 2 ? 0 : offset + ifdSize,
+      i === count - 1 ? 0 : offset + ifdSize,
       offset + 2 + entries * 12,
     );
     blocks[i].copy(buffer, pixelOffset);

@@ -2,7 +2,7 @@
 
 React + TypeScript 기반 브라우저 문서 편집 및 영구 마스킹 프로젝트입니다. 원본 파일을 서버에 업로드하지 않는 구조를 목표로 합니다.
 
-현재 **Phase 5 결과 저장**까지 구현했습니다. 이미지와 다중 페이지 PDF/TIFF 탐색, 확대·이동·회전·반전·색상 처리, 마스킹 영역 편집과 Undo/Redo를 지원합니다. 다운로드 시 원본을 수정하지 않고 새 픽셀에 불투명 마스킹을 합성해 PNG/JPEG/PDF/TIFF 또는 페이지 이미지 ZIP으로 저장합니다.
+현재 **Phase 6 최적화 및 테스트**까지 구현했습니다. 이미지와 다중 페이지 PDF/TIFF 탐색, 확대·이동·회전·반전·색상 처리, 마스킹 영역 편집과 Undo/Redo를 지원합니다. 다운로드 시 원본을 수정하지 않고 새 픽셀에 불투명 마스킹을 합성해 PNG/JPEG/PDF/TIFF 또는 페이지 이미지 ZIP으로 저장합니다.
 
 PDF.js, UTIF Worker, Konva/react-konva를 공통 문서 어댑터 구조로 연결했습니다. 원본 크기와 화면 미리보기를 분리하고 필요한 페이지만 렌더링합니다. 파일을 닫거나 업로드를 취소할 수 있으며 오류가 난 파일이 있어도 나머지 파일을 계속 엽니다.
 
@@ -46,7 +46,7 @@ npm run test:e2e
 Remove-Item Env:VITE_BASE_PATH
 ```
 
-단위 테스트 150개와 Windows Chromium production 서브경로 E2E 26개, Edge 26개를 검증했습니다. 기존 입력/탐색/편집/Worker 회귀에 더해 HiDPI 2배 마스킹 생성/이동/resize, gesture 단위 Undo, 삭제/색상/숨김, 원본 좌표·경계·취소, PDF 초기 회전 및 PDF/TIFF 페이지별 상태, 모바일을 검사합니다. 출력 파일의 실제 픽셀 및 PDF 텍스트·주석·첨부·원본 metadata·숨김 레이어 제외를 재현 fixture로 검사합니다. 모든 파일/브라우저 또는 모든 복구 공격에 대한 절대적 보안 보장은 아닙니다.
+단위 테스트 164개와 Windows Chromium/Edge 각각 production 서브경로 E2E 31개를 검증했습니다. 기존 입력/탐색/편집/Worker 회귀에 더해 HiDPI 2배 마스킹 생성/이동/resize, gesture 단위 Undo, 삭제/색상/숨김, 원본 좌표·경계·취소, PDF 초기 회전 및 PDF/TIFF 페이지별 상태, 모바일을 검사합니다. 출력 파일의 실제 픽셀 및 PDF 텍스트·주석·첨부·원본 metadata·숨김 레이어 제외를 재현 fixture로 검사합니다. 모든 파일/브라우저 또는 모든 복구 공격에 대한 절대적 보안 보장은 아닙니다.
 
 ![Phase 5 결과 다운로드 화면 (자동 테스트 캡처)](docs/screenshots/phase-5.png)
 
@@ -121,7 +121,7 @@ PNG는 재디코딩 후 전체 RGBA를 정확히 비교합니다. JPEG는 제거
 
 TIFF 출력은 classic little-endian RGB 8bit, 무압축, 페이지별 단일 strip, orientation 1의 단일/다중 페이지 형식입니다. 원본 압축·EXIF·DPI metadata는 보존하지 않으며 결과가 더 커질 수 있습니다. UTIF로 재개방해 모든 페이지의 전체 픽셀과 순서를 비교합니다. ZIP은 JSZip으로 새 이미지만 STORE 방식으로 묶고 CRC/항목/바이트를 재검증합니다. 검사 실패 또는 취소 시 다운로드하지 않습니다.
 
-출력은 최대 200페이지, 기존 페이지 크기 한도와 작업 추정 예산 128MiB를 함께 검사합니다. decode 전 픽셀/DPI와 중간 버퍼 추정치, 누적 결과와 최종 파일 크기를 확인하므로 1,600만 픽셀 이하의 입력도 출력 예산에 걸릴 수 있습니다. 이 경우 현재 페이지만 또는 낮은 PDF DPI로 출력하세요. 자동 축소하지 않습니다. 실제 브라우저 전체 메모리 상한은 아니며 Worker 합성/대용량 실측/스트리밍은 Phase 6에 남아 있습니다. 일부 동기 인코딩/검사 중 취소는 단계 종료 후 적용됩니다.
+출력은 최대 200페이지, 기존 페이지 크기 한도와 작업 추정 예산 128MiB를 함께 검사합니다. decode 전 픽셀/DPI와 중간 버퍼 추정치, 누적 결과와 최종 파일 크기를 확인하므로 1,600만 픽셀 이하의 입력도 출력 예산에 걸릴 수 있습니다. 이 경우 현재 페이지만 또는 낮은 PDF DPI로 출력하세요. 자동 축소하지 않습니다. 실제 브라우저 전체 메모리 상한은 아니며 Worker 합성/최종 조립과 제한된 대용량 표본 검사를 구현했습니다. 디스크 스트리밍과 전체 native heap 실측은 제공하지 않습니다. 일부 native Canvas/JPEG 검사는 동기 구간이 있습니다.
 
 Phase 5 캡처는 검증된 PDF 출력 테스트에서 재현합니다.
 
@@ -131,3 +131,22 @@ $env:CAPTURE_PHASE5 = '1'
 npm run test:e2e -- e2e/export.spec.ts --grep 'PDF export removes'
 Remove-Item Env:CAPTURE_PHASE5
 ```
+
+## 최적화·자원 관리·접근성 (Phase 6)
+
+출력 픽셀 합성과 PDF/TIFF/ZIP 조립·검증은 취소 가능한 Worker에서 실행합니다. Worker 시작 번들은 4.31KB이며 최종 인코더는 필요할 때 읽습니다. decode 후 출력용 Canvas를 즉시 해제하고 RGBA는 transferable buffer로 보내 복사 비용을 줄입니다. PDF는 PNG와 페이지별 RGB SHA-256만 유지하고 원시 RGBA 전체를 누적하지 않습니다. 최종 PDF 이미지의 크기/구조/추출 RGB 해시를 검사합니다. 동시에 여러 출력 작업을 실행하지 않으며 Worker 성공/실패/취소/60초 timeout에서 자원을 정리합니다.
+
+OffscreenCanvas가 Worker에서 가능하면 PNG/JPEG 인코딩도 Worker에서 수행합니다. 없으면 픽셀 Worker + DOM Canvas 인코딩을 사용합니다. Worker 자체가 없는 환경은 같은 합성 커널을 비동기 chunk로 실행하되 페이지당 100만 픽셀/중간 결과 총 8MiB로 제한합니다. TIFF 입력은 Worker가 필요합니다. Worker 오류를 무시하고 성공으로 처리하지 않으며 재시도할 수 있습니다.
+
+axe-core의 WCAG A/AA 태그 검사로 빈 화면/편집/light/dark/모바일 다운로드 상태의 자동 위반 0을 확인했습니다. 다운로드 열기 시 출력 형식으로 포커스하고 Escape/닫기 후 버튼으로 돌아갑니다. 출력 중 Escape는 취소합니다. 자동 검사와 키보드 흐름이 모든 스크린리더의 접근성을 인증하는 것은 아닙니다.
+
+120페이지 PDF/TIFF의 탐색과 전체 다운로드, 400만 픽셀 PNG 출력, 8회 큰 PNG 열기/닫기, Worker/Blob URL 0 복귀, 출력 중 heartbeat, 오류·timeout·취소·fallback을 검사합니다. [Chromium 표본](docs/performance/phase-6-chromium.json)과 [Edge 표본](docs/performance/phase-6-msedge.json)은 출력 시간/크기와 baseline/관찰 peak/final JS heap을 담습니다. 강제 GC 뒤 heap 증가 32MiB 이하 관문을 적용합니다. CDP JS heap은 native Canvas/decoder/GPU 및 Worker 전체 메모리를 포함하지 않으며 표본 관찰 peak는 전체 순간 최대값이 아닙니다. Windows의 한 환경에서 생성한 값이고 모든 큰 파일/브라우저 성능 보장이 아닙니다.
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chromium'
+$env:CAPTURE_PHASE6 = '1'
+npm run test:e2e -- e2e/optimization.spec.ts
+Remove-Item Env:CAPTURE_PHASE6
+```
+
+CI는 새 `test-results/performance` 보고서를 artifact로 7일 보관하도록 구성했습니다. 원격 실행과 업로드는 아직 미검증입니다. Firefox/Safari/실제 터치/스크린리더, 다양한 대용량 코퍼스와 전체 native heap/파일 시스템 스트리밍은 남은 확장 범위입니다. 다음 단계는 Phase 7 포트폴리오 정리 및 실제 Pages 배포 검증입니다.

@@ -20,6 +20,22 @@ function adapter(): DocumentAdapter {
   };
 }
 describe('render resource lifecycle', () => {
+  it('keeps bounded cache accounting across repeated document lifecycles', async () => {
+    const renderer = new PageRenderer(800);
+    for (let cycle = 0; cycle < 20; cycle++) {
+      renderer.register('a', adapter());
+      for (let index = 0; index < 2; index++)
+        await renderer.render('a', index, 160, new AbortController().signal);
+      expect(renderer.diagnostics().cacheBytes).toBeLessThanOrEqual(800);
+      await renderer.close('a');
+      expect(renderer.diagnostics()).toEqual({
+        documents: 0,
+        cachedPages: 0,
+        cacheBytes: 0,
+        budgetBytes: 800,
+      });
+    }
+  });
   it('exports without caching and checks output pixel budget before decode', async () => {
     const renderer = new PageRenderer();
     const source = adapter();

@@ -6,8 +6,8 @@
 
 - 기준 문서 2개와 빈 docs 디렉터리만 존재했다. 기존 구현, 테스트 결과, Git 저장소 또는 remote는 없었다.
 - 기준 문서를 전체 읽고 의존성/보안/메모리 제약 및 전체 계층 설계를 DECISIONS.md에 기록했다.
-- 이번 작업은 Phase 5의 새 픽셀 마스킹 합성, PNG/JPEG/PDF/ZIP/단일·다중 TIFF 출력과 재디코딩/구조 검증을 구현했다. Phase 6의 Worker 합성·대용량 성능 실측·브라우저 확장 검증은 시작하지 않았다.
-- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 이번 로컬 커밋에 포함하며 푸시는 진행하지 않는다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
+- 이번 작업은 Phase 6의 출력 Worker/OffscreenCanvas 및 제한된 fallback, PDF 중간 버퍼 절감, 취소·오류·자원 관리, 자동 접근성 검사와 대용량 fixture 검증을 구현했다. 실제 전체 native heap/Firefox·Safari·스크린리더/디스크 스트리밍 검증 범위는 남아 있다. Phase 7 실제 배포 작업은 시작하지 않았다.
+- PROJECT.md와 AGENTS.md는 수정하지 않았다. Phase 1 `6a2c3d8`, Phase 2 `40b5b2d`, CI 잠금 파일 수정 `e2bb583`는 `origin/main`에 푸시되어 있다. 원격 주소: https://github.com/HeoSeongbin/MaskingViewer.git. Phase 3은 6b0265c로 푸시했다. E2E 타이밍 수정은 dcf7fd0으로 푸시했고 Actions 38369290926의 전체 성공을 확인했다. Phase 4는 d39fe4e로 로컬 커밋했으며 사용자 요청에 따라 푸시하지 않았다. Phase 5는 6529357로 로컬 커밋했다. Phase 6은 이번 로컬 커밋에 포함하며 푸시는 진행하지 않는다. 원격 실행 결과와 실제 배포는 별도로 검증해야 한다.
 
 ## Phase 1 — 완료
 
@@ -93,11 +93,20 @@ Phase 1 완료 당시 미구현 기능은 안내만 표시했다. Phase 5 현재
 - [x] 현재/전체 범위, 출력 형식/페이지 수/진행 상태/_masked 파일명, 150/300 DPI, 취소/복구/오류 차단
 - [x] PNG 전체 픽셀/JPEG 명시한 오차/TIFF 전체 픽셀/ZIP CRC와 이미지/PDF 텍스트·구조·추출 RGB 검증
 
-## Phase 6 — 미착수
+## Phase 6 — 완료 (명시한 환경·한도·검증 범위)
 
-- [ ] 대용량 메모리/Canvas 제한, worker/OffscreenCanvas 및 fallback
-- [ ] 성능/자원 해제/요청 취소 및 오류 처리 강화
-- [ ] 핵심 단위/통합/E2E/접근성 테스트와 재현 fixture
+- [x] 기존 Canvas/픽셀/128MiB 추정 예산 및 200페이지 한도 유지, decode 전 fallback 예산 검사
+- [x] 출력 픽셀 Worker와 OffscreenCanvas 인코딩, PDF/TIFF/ZIP 최종 조립·검증 Worker 및 모듈 지연 로딩
+- [x] Worker 미지원 시 취소 가능한 동일 합성 커널, 100만 픽셀/8MiB 제한 fallback
+- [x] PDF의 페이지별 원시 RGBA 누적 제거, PNG + RGB 전체 SHA-256 검증
+- [x] 출력 Canvas 즉시 해제, transferable buffer, 단일 출력 lock, Worker 종료/오류/시간 초과/취소 cleanup
+- [x] PNG 비교 chunk 양보, 실행 중 취소 및 재시도, 실제 Worker/Blob URL 0 복귀 검사
+- [x] 단위/통합/전체 E2E 회귀와 독립 출력 재검증 유지
+- [x] axe WCAG A/AA 자동 검사, light 텍스트 대비 수정, 다운로드 포커스/Escape 흐름
+- [x] 400만 픽셀 PNG 출력/응답성, 120페이지 PDF/TIFF 탐색·전체 출력·재개방, 반복 닫기 JS heap 표본
+- [x] 성능 보고서 및 CI artifact 구성 (원격 실행/업로드 자체는 미검증)
+
+총 native/Worker/GPU heap과 모든 브라우저/스크린리더·대용량 코퍼스 검증은 완료 처리하지 않는다. 스트리밍/디스크 임시 저장은 미구현이며 한도를 초과하는 결과는 차단한다. 최신 성능 표본은 docs/performance JSON에 보관한다.
 
 ## Phase 7 — 미착수
 
@@ -111,26 +120,34 @@ README/스크린샷/workflow는 현재 단계 기준으로 갱신했다. Phase 7
 
 ## 가장 최근 검증 결과
 
-Phase 5 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 기준이다.
+Phase 6 환경: Windows, Node 24.12.0, npm 11.6.2. production `/MaskingViewer/` 기준이다.
 
-| 검사                           | 결과                                                                                                        |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| 깨끗한 npm ci                  | 성공, 281 packages 설치, audit 0 vulnerabilities                                                            |
-| Linux x64/glibc npm ci dry-run | 통과. 실제 Linux 실행은 아님                                                                                |
-| npm ls --depth=0               | 통과                                                                                                        |
-| TypeScript / ESLint            | 통과                                                                                                        |
-| Vitest                         | 12파일 150개 통과 (Phase 4의 129개 + 출력/자원 관리 21개)                                                   |
-| Production build               | 통과, main 256.72KB / 별도 export 8.99KB / PDF·ZIP lazy chunks                                              |
-| Chromium E2E                   | 최종 26개 통과 (기존 20 + 출력 6)                                                                           |
-| Edge E2E                       | 최종 26개 통과 (기존 20 + 출력 6)                                                                           |
-| 출력 보안                      | fixture의 PNG/JPEG/TIFF/ZIP 재디코딩, PDF 원본 텍스트·주석·첨부·metadata·숨김 구조 제외, 추출 RGB 검사 통과 |
-| 취소/검증 실패 차단            | 재디코딩 손상 주입 시 다운로드 0건, 취소 후 재시도 통과                                                     |
-| 포맷 / diff 검사               | 최종 문서 포함 Prettier 및 git diff --check 통과                                                            |
-| GitHub Actions / 실제 Pages    | Phase 3 수정 dcf7fd0 실행 38369290926 성공. Phase 4–5 원격 미검증                                           |
+| 검사                           | 결과                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- |
+| 깨끗한 npm ci                  | 성공, 283 packages 설치, audit 0 vulnerabilities                                                   |
+| Linux x64/glibc npm ci dry-run | 통과. 실제 Linux 빌드/실행은 아님                                                                  |
+| npm ls --depth=0               | 통과                                                                                               |
+| TypeScript / ESLint            | 깨끗한 설치 후 최종 통과                                                                           |
+| Vitest                         | 13파일 164개 통과 (Phase 5의 150개 + Worker/캐시/동시 출력 14개)                                   |
+| Production build               | 통과, main 257.30KB / 픽셀 Worker 4.31KB / 인코더 lazy chunks                                      |
+| Chromium E2E                   | 전체 31개 통과 (기존 26 + 최적화/접근성 5)                                                         |
+| Edge E2E                       | 전체 31개 통과 (기존 26 + 최적화/접근성 5)                                                         |
+| 접근성                         | 빈 화면/편집/light/dark/mobile 출력 WCAG A/AA 태그 위반 0, 포커스/Escape 통과                      |
+| 대용량 표본                    | 400만 픽셀 PNG 출력, 120페이지 PDF/TIFF 탐색·전체 출력·재개방, 8회 PNG 열기/닫기 후 heap 관문 통과 |
+| 자원/오류                      | Worker/Blob URL 0 복귀, 오류·60초 timeout 단위 검사, 취소·재시도·fallback·동시 출력 차단 통과      |
+| 포맷 / diff                    | 최종 문서 포함 Prettier/diff 검사 통과                                                             |
+| 원격 CI / Pages                | Phase 3 수정 dcf7fd0 실행 38369290926 성공. Phase 4–6 및 새 performance artifact 원격 미검증       |
 
-Phase 5 screenshot phase-5.png는 CAPTURE_PHASE5=1의 PDF 보안 E2E에서 캡처하고 데스크톱 1280×900의 실제 다운로드 완료 화면을 시각 확인했다. 단위 테스트는 16개 회전/양축 반전 조합, 외향 경계/단색/원본 불변/투명 RGB 제거/PDF 비율/TIFF 순서/사전 메모리 예산/취소/캐시 미사용을 검사한다. E2E는 HiDPI 2배에서 실제 다운로드와 재개방, 숨김 영역 반영, 복합 변환·색상, 사용자 단색, PDF 초기 회전과 다중 페이지, 원본 PDF 검색 문자열과 첨부/주석 존재 대비 결과 제거, mobile dark 패널 경계를 검사한다.
+출력 보안 검사는 Phase 5의 기존 6개 E2E를 유지한다. Worker/OffscreenCanvas 경로에서도 PNG/JPEG/TIFF/ZIP 재디코딩, PDF 원본 텍스트·주석·첨부·metadata·숨김 구조 제외, 추출 RGB를 검사한다. 이전 단계의 테스트 결과는 아래 이력과 DECISIONS.md에 보존한다.
 
-이전 Phase 1–4 검증 및 CI 수정 결과는 아래 이력과 DECISIONS.md 009–013에 보존한다. Phase 2 root build 성공을 Phase 5 root build 성공으로 바꾸지 않는다. Firefox/Safari, 실제 터치, 복잡한 코덱 코퍼스, 큰 파일의 전체 heap과 모든 복구 공격에 대한 보안은 미검증이다.
+성능 표본(1회 Windows 실행, 보편 성능 보장 아님):
+
+| 브라우저 | PDF 120페이지 출력     | TIFF 120페이지 출력   | baseline / 관찰 peak / final JS heap   |
+| -------- | ---------------------- | --------------------- | -------------------------------------- |
+| Chromium | 13.876초, 832,775bytes | 0.970초, 447,848bytes | 1,582,536 / 9,947,672 / 6,426,308bytes |
+| Edge     | 14.593초, 832,775bytes | 1.317초, 447,848bytes | 1,673,956 / 8,826,804 / 6,476,856bytes |
+
+원시 보고서: docs/performance/phase-6-chromium.json 및 phase-6-msedge.json. heap은 CDP usedSize 표본이며 native Canvas/decoder/GPU/전체 Worker 메모리를 포함하지 않는다. 최종 강제 GC 후 증가가 32MiB 이하인지 검사한다. baseline 이후 lazy module 로딩도 포함하므로 순수 누수량 또는 전체 순간 peak로 해석하지 않는다. PDF/TIFF 페이지는 512pt/40×30px fixture이며 다양한 실문서 성능을 대표하지 않는다.
 
 ## 발견한 문제와 해결
 
@@ -148,9 +165,9 @@ Phase 5 screenshot phase-5.png는 CAPTURE_PHASE5=1의 PDF 보안 E2E에서 캡�
 
 ## 알려진 제한과 진행 작업
 
-현재 진행 작업: 없음. Phase 5 구현·로컬 검증·문서 갱신을 완료했다. 다음 우선순위는 Phase 6의 대용량 메모리 실측, 출력 Worker/스트리밍과 더 즉각적인 취소, Firefox/Safari 및 접근성·오류 경로 확장이다. Phase 4 로컬 커밋을 보존하고 Phase 5는 이번 커밋으로 보관한다. 푸시는 진행하지 않는다.
+현재 진행 작업: 없음. Phase 6 구현·로컬 검증·문서 갱신을 완료했다. 다음 우선순위는 Phase 7 실제 기능 기준 포트폴리오 및 Pages 배포/재개방 검증이다. Firefox/Safari·실제 터치·스크린리더 및 전체 native heap/다양한 코퍼스/스트리밍은 확장 과제로 남긴다. Phase 4–5 로컬 커밋을 보존하고 Phase 6은 이번 커밋으로 보관한다. 푸시는 진행하지 않는다.
 
-테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 브라우저별 큰 Canvas/실제 heap 상한 및 출력 Worker/스트리밍은 Phase 6에 남아 있다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
+테마와 열린 문서는 새로고침 시 초기화한다. TIFF 출력은 classic RGB8 무압축, PDF DPI는 150/300으로 검증했다. 출력은 흰색 배경과 사방 1픽셀 마스킹 여백을 적용한다. 출력 Worker 및 제한된 대용량 JS heap 표본은 Phase 6에서 구현했다. 브라우저별 전체 native heap 상한과 디스크 스트리밍은 여전히 미검증/미구현이다. TIFF는 Worker 미지원 환경에서 명시적으로 중단한다. Firefox/Safari, 복잡한 CCITT/LZW/palette/RGB/EXIF 변형과 대용량 파일 코퍼스 검증은 남아 있다. 자동 테스트는 fixture 출력의 마스킹/구조 검증을 뜻하며 대용량 성능이나 모든 복구 공격에 대한 절대적 보안을 뜻하지 않는다. 실제 배포 주소/Pages 동작은 미검증이다.
 
 ## CI E2E 오류 수정 (2026-10-13)
 
@@ -187,3 +204,15 @@ Phase 5 screenshot phase-5.png는 CAPTURE_PHASE5=1의 PDF 보안 E2E에서 캡�
 - Phase 6의 대용량 Worker/스트리밍/실측, 실제 터치·Safari·Firefox, 원격 CI/Pages는 미검증이다. 이번 변경은 로컬 커밋으로 보관하며 푸시는 진행하지 않는다.
 
 - Phase 5 최종 검증: 타입/ESLint/production 서브경로 build/Prettier/diff 검사 통과, Vitest 12파일 150개, Chromium 26개(36.7초) 및 Edge 26개(37.6초) E2E 모두 통과. 4173 preview는 최신 빌드로 복원했다.
+
+## Phase 6 구현 및 발견한 문제 (2026-10-14)
+
+- 공통 Worker job으로 성공/실패/취소/timeout을 처리하고 합성·최종 조립을 분리했다. PDF 원시 RGBA를 누적하지 않고 전체 RGB SHA-256을 비교한다. 기존 출력 안전성 검사를 유지했다. PNG 검사는 chunk로 UI에 양보한다.
+- 픽셀 Worker가 초기 582KB로 모든 인코더를 포함하던 비용은 Vite es module Worker와 lazy import로 4.31KB까지 줄였다. 어댑터/색상/마스킹 좌표/원본 문서는 재작성하지 않았다.
+- axe가 accent/tint 4.39 및 muted/background 4.35 등 대비 부족을 검출했다. 규칙 제외 없이 semantic token을 수정해 light/dark/mobile 편집·출력 검사를 통과했다.
+- 신규: src/core/export/ExportWorker.ts, FinalizeExport.ts, fingerprint.ts; src/workers/export.worker.ts; src/tests/exportWorker.test.ts; e2e/optimization.spec.ts; docs/performance/phase-6-chromium.json, phase-6-msedge.json.
+- 수정: src/core/export/ExportPipeline.ts, pixels.ts; src/core/document/PageRenderer.ts; src/components/dialogs/ExportPanel.tsx; src/app/App.tsx, styles.css; src/tests/PageRenderer.test.ts; scripts/fixtures.mjs, fixtures.d.mts; vite.config.ts; package.json, package-lock.json; .github/workflows/pages.yml; README.md, docs/PROGRESS.md, DECISIONS.md.
+- @axe-core/playwright 4.13.0을 devDependency로 추가했다. 실제 npm ci와 Linux 대상 dry-run 성공, audit 0건이다. 깨끗한 설치를 위해 4173 preview를 일시 종료한 후 최신 빌드로 복원했다.
+- Phase 7 원격 배포, native heap 전체 측정, Firefox/Safari·터치·스크린리더, 다양한 큰 TIFF/PDF 코퍼스 및 디스크 스트리밍은 완료 처리하지 않는다. 이번 Phase 6 변경은 로컬 커밋으로 보관하며 푸시는 진행하지 않는다.
+
+- Phase 6 최종 재확인: 실제 npm ci 및 Linux 대상 dry-run, 타입/ESLint/Vitest 164개/Prettier/production 서브경로 build 통과. Chromium·Edge 전체 31개씩 통과했으며 깨끗한 설치 후 CI와 같은 test-results/performance 경로의 120페이지 전체 출력/보고서 생성 검사도 통과했다. 4173 preview를 최신 빌드로 복원했다. 원격 CI 업로드와 실제 배포는 실행하지 않았다.

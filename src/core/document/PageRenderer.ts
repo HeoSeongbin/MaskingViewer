@@ -11,6 +11,14 @@ export class PageRenderer {
   private tail: Promise<unknown> = Promise.resolve();
   private bytes = 0;
   constructor(private budget = 48 * 1024 * 1024) {}
+  diagnostics() {
+    return {
+      documents: this.adapters.size,
+      cachedPages: this.cache.size,
+      cacheBytes: this.bytes,
+      budgetBytes: this.budget,
+    };
+  }
   register(id: string, adapter: DocumentAdapter) {
     this.adapters.set(id, adapter);
   }
@@ -92,7 +100,9 @@ export class PageRenderer {
           pixelBudget
         )
           throw new Error(
-            '출력 메모리 예산을 초과합니다. 현재 페이지만 또는 낮은 PDF DPI로 출력하세요.',
+            pixelBudget === 1_000_000
+              ? 'Worker 미지원 환경에서는 출력 페이지를 100만 픽셀 이하로 제한합니다.'
+              : '출력 메모리 예산을 초과합니다. 현재 페이지만 또는 낮은 PDF DPI로 출력하세요.',
           );
         const canvas = await adapter.renderPage(index, 16384, signal, dpi);
         if (signal.aborted || this.adapters.get(id) !== adapter) {

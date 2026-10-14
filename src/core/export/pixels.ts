@@ -1,4 +1,4 @@
-import { assertDimensions } from '../document/DocumentModel';
+import { assertDimensions, checkAbort } from '../document/DocumentModel';
 import { editGeometry } from '../geometry/coordinateTransform';
 import { apply } from '../geometry/transformMatrix';
 import { transformPixels } from '../image/colorTransform';
@@ -10,20 +10,25 @@ export interface OutputPixels extends Size {
   data: Uint8ClampedArray;
 }
 // Work on a new buffer. Every intersecting source pixel is overwritten before rotation.
-export function composePixels(
+export function* composePixelSteps(
   source: OutputPixels,
   bounds: Size,
   edit: PageEdit,
-): OutputPixels {
+): Generator<void, OutputPixels> {
   assertDimensions(source.width, source.height);
   if (source.data.length !== source.width * source.height * 4)
     throw new Error('잘못된 픽셀 버퍼입니다.');
-  const data = transformPixels(new Uint8ClampedArray(source.data), edit);
-  for (let i = 0; i < data.length; i += 4) {
-    const alpha = data[i + 3]! / 255;
-    for (let c = 0; c < 3; c++)
-      data[i + c] = data[i + c]! * alpha + 255 * (1 - alpha);
-    data[i + 3] = 255;
+  const data = new Uint8ClampedArray(source.data);
+  for (let start = 0; start < data.length; start += 262144) {
+    const end = Math.min(data.length, start + 262144);
+    transformPixels(data.subarray(start, end), edit);
+    for (let i = start; i < end; i += 4) {
+      const alpha = data[i + 3]! / 255;
+      for (let c = 0; c < 3; c++)
+        data[i + c] = data[i + c]! * alpha + 255 * (1 - alpha);
+      data[i + 3] = 255;
+    }
+    yield;
   }
   for (const region of edit.masks) {
     const mask = validateMask(region, bounds);
@@ -42,7 +47,7 @@ export function composePixels(
     const rgb = [1, 3, 5].map((offset) =>
       parseInt(mask.fill.slice(offset, offset + 2), 16),
     );
-    for (let y = y0; y < y1; y++)
+    for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const i = (y * source.width + x) * 4;
         data[i] = rgb[0]!;
@@ -50,6 +55,9 @@ export function composePixels(
         data[i + 2] = rgb[2]!;
         data[i + 3] = 255;
       }
+      if ((y - y0) % 32 === 31) yield;
+    }
+    yield;
   }
   const geometry = editGeometry(source, edit);
   const output = new Uint8ClampedArray(data.length);
@@ -66,8 +74,37 @@ export function composePixels(
       point.x += geometry.matrix[0];
       point.y += geometry.matrix[1];
     }
+    if (y % 32 === 31) yield;
   }
   return { width: geometry.width, height: geometry.height, data: output };
+}
+export function composePixels(
+  source: OutputPixels,
+  bounds: Size,
+  edit: PageEdit,
+) {
+  const steps = composePixelSteps(source, bounds, edit);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
+}
+export async function composePixelsAsync(
+  source: OutputPixels,
+  bounds: Size,
+  edit: PageEdit,
+  signal: AbortSignal,
+) {
+  const steps = composePixelSteps(source, bounds, edit);
+  try {
+    while (true) {
+      checkAbort(signal);
+      const step = steps.next();
+      if (step.done) return step.value;
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+  } finally {
+    steps.return({ width: 0, height: 0, data: new Uint8ClampedArray() });
+  }
 }
 export function equalPixels(actual: OutputPixels, expected: OutputPixels) {
   if (
@@ -77,6 +114,27 @@ export function equalPixels(actual: OutputPixels, expected: OutputPixels) {
     actual.data.some((value, i) => value !== expected.data[i])
   )
     throw new Error('출력 픽셀 검증에 실패하여 다운로드를 차단했습니다.');
+}
+export async function equalPixelsAsync(
+  actual: OutputPixels,
+  expected: OutputPixels,
+  signal: AbortSignal,
+) {
+  if (
+    actual.width !== expected.width ||
+    actual.height !== expected.height ||
+    actual.data.length !== expected.data.length
+  )
+    throw new Error('출력 픽셀 검증에 실패하여 다운로드를 차단했습니다.');
+  for (let start = 0; start < actual.data.length; start += 1048576) {
+    checkAbort(signal);
+    const end = Math.min(actual.data.length, start + 1048576);
+    for (let i = start; i < end; i++)
+      if (actual.data[i] !== expected.data[i])
+        throw new Error('출력 픽셀 검증에 실패하여 다운로드를 차단했습니다.');
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  checkAbort(signal);
 }
 export function rgbPixels(page: OutputPixels) {
   const rgb = new Uint8Array(page.width * page.height * 3);

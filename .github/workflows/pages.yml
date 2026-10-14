@@ -38,6 +38,18 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+        env:
+          PLAYWRIGHT_CHANNEL: chromium
+          CAPTURE_PHASE6: '1'
+          PHASE6_REPORT_DIR: test-results/performance
+      - name: Upload performance samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase-6-performance
+          path: test-results/performance
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Upload browser test diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

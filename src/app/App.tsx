@@ -86,7 +86,7 @@ export function App() {
               </div>
             </div>
             <div className="header-actions">
-              <span className="phase-badge">PHASE 05 · 결과 저장</span>
+              <span className="phase-badge">PHASE 06 · 최적화·검증</span>
               {active && <ExportPanel key={active.id} document={active} />}
               <button className="primary-button" onClick={openFiles}>
                 <FileUp size={17} />

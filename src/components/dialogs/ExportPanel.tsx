@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { DocumentModel } from '../../core/document/DocumentModel';
 import type { ExportFormat } from '../../core/export/ExportPipeline';
 import { useEditStore } from '../../stores/editStore';
@@ -19,8 +19,20 @@ export function ExportPanel({ document }: { document: DocumentModel }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  const panelId = useId();
+  useEffect(() => {
+    if (open)
+      panel.current?.querySelector<HTMLSelectElement>('select')?.focus();
+  }, [open]);
+  const close = () => {
+    setOpen(false);
+    trigger.current?.focus();
+  };
   useEffect(() => () => controller.current?.abort(), []);
   const run = async () => {
+    if (controller.current) return;
     const cancel = new AbortController();
     controller.current = cancel;
     setBusy(true);
@@ -72,11 +84,25 @@ export function ExportPanel({ document }: { document: DocumentModel }) {
         className="primary-button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        ref={trigger}
       >
         다운로드
       </button>
       {open && (
-        <section className="export-panel" aria-label="결과 다운로드">
+        <section
+          id={panelId}
+          ref={panel}
+          className="export-panel"
+          aria-label="결과 다운로드"
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.stopPropagation();
+              if (busy) controller.current?.abort();
+              else close();
+            }
+          }}
+        >
           <h2>결과 다운로드</h2>
           <p>{document.name}</p>
           <label>
@@ -151,7 +177,8 @@ export function ExportPanel({ document }: { document: DocumentModel }) {
           <p className="muted">
             페이지당 1,600만 픽셀, 출력 작업 예산 128MiB, 최대 200페이지. 실제
             브라우저 전체 메모리 상한을 보장하지 않습니다. 검증 실패 시
-            다운로드를 차단합니다.
+            다운로드를 차단합니다. Worker 미지원 환경은 페이지당 100만 픽셀·누적
+            중간 결과 8MiB로 제한합니다.
           </p>
           {status && <p role="status">{status}</p>}
           {error && <p role="alert">{error}</p>}
@@ -164,7 +191,7 @@ export function ExportPanel({ document }: { document: DocumentModel }) {
               검증 후 다운로드
             </button>
           )}
-          <button disabled={busy} onClick={() => setOpen(false)}>
+          <button disabled={busy} onClick={close}>
             닫기
           </button>
         </section>
