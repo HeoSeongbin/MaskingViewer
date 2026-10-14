@@ -2,6 +2,7 @@ import type { DocumentModel } from '../../core/document/DocumentModel';
 import { useRenderedPage } from '../../hooks/useRenderedPage';
 import { DEFAULT_EDIT, pageKey, useEditStore } from '../../stores/editStore';
 import { editGeometry } from '../../core/geometry/coordinateTransform';
+import { MaskPanel } from '../masking/MaskPanel';
 export function PropertiesPanel({
   document,
 }: {
@@ -23,8 +24,15 @@ export function PropertiesPanel({
     <>
       <div className="panel-title">
         <h2>속성</h2>
-        <span className="subtle-label">문서 정보</span>
+        <span className="subtle-label">영역 · 문서 정보</span>
       </div>
+      {document && (
+        <MaskPanel
+          key={pageKey(document.id, document.currentPage)}
+          pageId={pageKey(document.id, document.currentPage)}
+          bounds={page?.metadata}
+        />
+      )}
       <div className="property-section">
         <h3>선택한 페이지</h3>
         <dl>
@@ -115,8 +123,8 @@ export function PropertiesPanel({
           Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y로 현재 페이지의 편집을 되돌립니다.
         </p>
         <p className="muted">
-          영구 마스킹은 Phase 4–5, 결과 다운로드는 Phase 5에서 제공됩니다. 현재
-          편집은 브라우저 세션 안에서만 유지됩니다.
+          영구 마스킹 합성과 결과 다운로드는 Phase 5에서 제공됩니다. 현재 편집은
+          브라우저 세션 안에서만 유지됩니다.
         </p>
       </div>
       <div className="security-card">

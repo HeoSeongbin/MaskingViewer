@@ -1,7 +1,7 @@
 # 기술 결정 및 전체 아키텍처
 
 기준: PROJECT.md 전체 및 AGENTS.md. 작성일: 2026-10-13.
-현재 Phase 1–3을 구현했다. 아래 초기 전체 설계 중 마스킹/출력은 이후 단계의 계약이다. 실제 Phase 2 결정은 009, Phase 3 결정과 검증 범위는 011에 기록한다.
+현재 Phase 1–4를 구현했다. 아래 초기 전체 설계 중 출력은 이후 단계의 계약이다. 실제 Phase 2 결정은 009, Phase 3 결정과 검증 범위는 011, Phase 4는 013에 기록한다.
 
 ## 001. 계층과 의존성
 
@@ -117,3 +117,21 @@ Phase 3 CI(38367640034)는 E2E 6개 실패로 배포가 중단됐다. Chromium�
 PLAYWRIGHT_CHANNEL=chromium은 OS와 관계없이 Playwright bundled Chromium 기본 실행기를 선택한다. 기본 Windows는 기존 Edge, Linux는 bundled Chromium이다. 이를 통해 Windows에서도 CI 엔진의 paint 타이밍을 재현할 수 있다. trace는 실패 때 유지하고 CI는 실패 시 test-results를 7일간 업로드한다. 진단 artifact의 실제 원격 업로드는 다음 실패 실행이 생겨야 확인할 수 있다.
 
 수정 후 Windows Chromium/Edge 각각 E2E 15개, 단위 95개, 타입/lint/production build가 통과했다. Linux 원격 재실행은 아직 하지 않았으며 로컬 Chromium 성공을 Linux 성공으로 기록하지 않는다. 의존성과 원본 좌표/색상 처리에는 변경이 없다.
+
+## 013. Phase 4 마스킹 편집 (2026-10-14)
+
+MaskRegion은 id/pageId/원본 기준 x/y/width/height/불투명 fill만 보유한다. pageId는 기존 documentId:pageIndex key를 사용한다. PDF는 초기 viewport 회전이 반영된 normalized 1px/pt 기준 좌표를 그대로 사용한다. 화면 배율과 backing DPR은 저장 영역에 들어가지 않는다. geometry의 전체 역행렬로 입력을 변환한다.
+
+MaskEngine은 hit/모서리/경계/move/resize/검증의 순수 함수다. UI pointer capture와 임시 drag 상태는 useMaskGesture, 세션 내 편집 데이터는 editStore, 속성 입력은 MaskPanel에 분리했다. 생성 후 선택 도구로 전환하고 기존 Konva Group 안에 영역/선택선/핸들을 표시한다. 핸들의 hit 반경은 Stage CSS 좌표, 표시 크기는 zoom 역수로 보정한다. 겹친 mask는 마지막 추가된 영역이 위쪽이다.
+
+드래그 동안 store/history를 갱신하지 않고 draft만 표시한다. pointerup의 최종 좌표를 반영한 뒤 한 번 commit한다. 0 크기 클릭, Escape, pointercancel, capture loss 또는 컴포넌트 종료는 미완성 작업을 폐기한다. 화면 wheel은 gesture 중 중단하여 입력 행렬이 바뀌지 않게 한다. min 가로/세로는 원본 기준 1 단위이며 생성은 페이지 내부에서 시작한다. 이동은 크기를 유지해 경계에 clamp, 모서리 교차는 반대 모서리를 기준으로 정규화한다.
+
+masks를 PageEdit에 추가하여 회전/반전/색상과 마스킹 생성·이동·resize·색상·삭제를 같은 Undo/Redo 순서로 처리한다. immutable 배열/변경 객체만 보관하고 원본 바이너리 또는 Canvas는 복제하지 않는다. 영역 1,000개/페이지 및 이력 100개/페이지로 제한한다. 전체 세션 메모리 상한을 보장하지는 않으며 실측은 Phase 6에 남긴다.
+
+선택 id, 표시/숨김, 도구와 새 영역 기본 색상은 UI 상태로 분리한다. 숨김은 원본 preview 확인에만 쓰고 영역 데이터/이력에 포함하지 않는다. thumbnail은 숨김과 관계없이 저장된 마스킹을 표시한다. 문서 닫기 시 UI 상태도 삭제한다. 삭제 후 Undo로 복원한 영역은 목록에서 다시 선택할 수 있다. 색상/좌표 변경은 불투명 HEX 및 페이지 bounds를 검사한다. 단순 focus/blur가 소수 좌표를 반올림하지 않게 입력에 저장 정밀도를 유지한다.
+
+원본 preview의 색상 처리 후 불투명 Rectangle을 표시하며 thumbnail도 색상 처리 후 원본→thumbnail 비율로 mask를 그린다. 색상 반전/흑백/밝기 등은 mask fill에 적용되지 않는다. 이미지 전체 편집 복원은 기존 masks를 보존하고 영역 초기화는 별도 이력 작업이다. UI는 마스킹 속성/미리보기 경고를 문서 정보보다 먼저 보여준다.
+
+이것은 Phase 4 편집 preview다. 실제 새 픽셀 생성, 출력 DPI 변환, 바깥 방향 경계 확장, PDF 원본 객체/텍스트/주석 미복사 및 출력 재디코딩 검증은 Phase 5에서 구현해야 한다. 현재 원본 File과 decode 리소스를 유지하므로 영구 제거 또는 안전한 결과물로 표현하지 않는다.
+
+검증: 단위 129개, Windows Chromium/Edge 각각 E2E 20개. 마스킹 E2E는 DPR 2에서 원본 좌표와 실제 픽셀을 검사한다. affine/경계/교차/히스토리, 색상/숨김/삭제/취소, PDF 초기 회전과 TIFF, 모바일 390px를 포함한다. screenshot은 CAPTURE_PHASE4=1의 기존 PDF/TIFF 테스트에서 재현한다. 원격 Phase 4 CI와 실제 터치/Safari/Firefox/대용량 메모리는 아직 미검증이다.

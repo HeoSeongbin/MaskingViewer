@@ -779,3 +779,97 @@ a:focus-visible {
     min-height: 200px;
   }
 }
+
+.mask-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11px;
+}
+.mask-actions label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mask-actions button,
+.mask-list button {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.mask-list {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow: auto;
+}
+.mask-list button {
+  width: 100%;
+  text-align: left;
+  margin: 3px 0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.mask-list button[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--tint);
+}
+.mask-swatch {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.mask-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.mask-fields label {
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.mask-fields input {
+  width: 100%;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 6px;
+  border-radius: 5px;
+}
+.mask-panel h4 {
+  font-size: 11px;
+  margin: 12px 0;
+}
+.mask-error {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--surface);
+  padding: 8px;
+  color: #b44242;
+  font-size: 12px;
+}
+.tool-mask {
+  cursor: crosshair;
+  touch-action: none;
+}
+.tool-select {
+  cursor: default;
+  touch-action: none;
+}
+.mask-actions input[type='text'] {
+  width: 76px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  padding: 4px;
+  font-size: 11px;
+}

@@ -85,7 +85,7 @@ export function App() {
               </div>
             </div>
             <div className="header-actions">
-              <span className="phase-badge">PHASE 03 · 문서 편집</span>
+              <span className="phase-badge">PHASE 04 · 마스킹 편집</span>
               <button className="primary-button" onClick={openFiles}>
                 <FileUp size={17} />
                 문서 열기

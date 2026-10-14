@@ -2,7 +2,7 @@
 
 React + TypeScript 기반 브라우저 문서 편집 및 영구 마스킹 프로젝트입니다. 원본 파일을 서버에 업로드하지 않는 구조를 목표로 합니다.
 
-현재 **Phase 3 문서 편집**까지 구현했습니다. 파일 선택·Drag & Drop, 이미지와 다중 페이지 PDF/TIFF 탐색에 더해 확대·이동·회전·좌우/상하 반전·색상 처리와 페이지별 Undo/Redo를 제공합니다. 영구 마스킹 및 다운로드는 아직 제공하지 않습니다.
+현재 **Phase 4 마스킹 편집**까지 구현했습니다. 파일 선택·Drag & Drop, 이미지와 다중 페이지 PDF/TIFF 탐색, 확대·이동·회전·반전·색상 처리에 더해 사각형 마스킹 생성/선택/이동/크기 조절/삭제와 페이지별 Undo/Redo를 제공합니다. 영구 픽셀 마스킹 합성과 다운로드는 아직 제공하지 않습니다.
 
 PDF.js, UTIF Worker, Konva/react-konva를 공통 문서 어댑터 구조로 연결했습니다. 원본 크기와 화면 미리보기를 분리하고 필요한 페이지만 렌더링합니다. 파일을 닫거나 업로드를 취소할 수 있으며 오류가 난 파일이 있어도 나머지 파일을 계속 엽니다.
 
@@ -46,9 +46,9 @@ npm run test:e2e
 Remove-Item Env:VITE_BASE_PATH
 ```
 
-단위 테스트 95개와 production 서브경로 E2E 15개를 검증했습니다. 입력/탐색 회귀와 함께 좌표 왕복 64조합, HiDPI 실제 Canvas의 복합 회전·반전/색상 픽셀, 밝기·대비/복원/이력, pointer zoom/이동, 페이지별 상태, TIFF 썸네일 일치 및 Worker 실패/fallback을 검사합니다. 영구 마스킹 보안은 아직 미검증입니다.
+단위 테스트 129개와 Windows Chromium/Edge 각각 production 서브경로 E2E 20개를 검증했습니다. 기존 입력/탐색/편집/Worker 회귀에 더해 HiDPI 2배 마스킹 생성/이동/resize, gesture 단위 Undo, 삭제/색상/숨김, 원본 좌표·경계·취소, PDF 초기 회전 및 PDF/TIFF 페이지별 상태, 모바일을 검사합니다. 영구 마스킹 보안은 아직 미검증입니다.
 
-![Phase 3 문서 편집 화면](docs/screenshots/phase-3.png)
+![Phase 4 마스킹 편집 화면 (자동 테스트 캡처)](docs/screenshots/phase-4.png)
 
 ## 구조
 
@@ -91,3 +91,22 @@ npm run test:e2e
 ```
 
 기본 Windows 실행기는 Edge이며 PLAYWRIGHT_CHANNEL=msedge로 명시할 수도 있습니다. Canvas 픽셀 검사는 Konva의 다음 프레임 그리기를 기다린 후 정확한 색상 값을 검사합니다. CI 실패 시 test-results artifact에서 스크린샷·오류 문맥·trace를 확인할 수 있습니다(7일 보관).
+
+## 마스킹 편집
+
+사각형 마스킹 도구로 문서 안에서 드래그하면 원본 좌표의 영역이 생성되고 선택 도구와 핸들이 활성화됩니다. 선택 도구에서 영역을 이동하거나 모서리로 크기를 바꿀 수 있습니다. 음수 방향 드래그와 모서리 교차를 정규화하고 페이지 경계를 제한합니다. 우측 목록과 X/Y/가로/세로 입력으로도 선택/수정할 수 있습니다.
+
+검은색, 흰색, 색상 선택기 또는 6자리 HEX의 불투명 색상을 사용합니다. Delete 또는 선택 삭제, 현재 페이지 전체 삭제가 가능하며 Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y로 회전·색상·마스킹의 동일한 편집 순서를 되돌립니다. 드래그는 놓는 순간 한 작업으로 기록하고 Escape/pointer 취소는 폐기합니다.
+
+마스킹 숨김은 원본 preview 확인용입니다. 숨김 중 Canvas 편집은 차단하고 영역 데이터는 유지합니다. 전체 이미지 편집 복원도 masks를 보존합니다. 문서/페이지 전환 시 영역은 유지되며 닫기/새로고침 시 초기화됩니다. 페이지당 영역 1,000개, 가로/세로 최소 원본 기준 1단위, 이력 100개입니다. 작은 영역은 확대 또는 좌표 입력으로 수정하세요.
+
+현재 Canvas와 썸네일의 영역은 편집 미리보기입니다. 원본 파일의 정보는 유지하며 안전한 다운로드 파일을 생성하지 않습니다. Phase 5에서 새 픽셀 합성, PDF 출력 DPI, 새 인코딩 및 원본 정보 잔존 검증을 구현해야 합니다.
+
+문서용 화면은 기존 PDF/TIFF E2E에서 실제 gesture로 재현할 수 있습니다(서브경로 build 후 실행).
+
+```powershell
+$env:PLAYWRIGHT_CHANNEL = 'chromium'
+$env:CAPTURE_PHASE4 = '1'
+npm run test:e2e -- e2e/masking.spec.ts --grep 'PDF and TIFF'
+Remove-Item Env:CAPTURE_PHASE4
+```

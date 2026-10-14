@@ -5,12 +5,16 @@ import type {
 } from '../core/geometry/coordinateTransform';
 import { DEFAULT_COLOR } from '../core/image/colorTransform';
 import type { ColorEdit } from '../core/image/colorTransform';
-export interface PageEdit extends GeometryEdit, ColorEdit {}
+import type { MaskRegion } from '../core/masking/MaskEngine';
+export interface PageEdit extends GeometryEdit, ColorEdit {
+  masks: readonly MaskRegion[];
+}
 export const DEFAULT_EDIT: PageEdit = {
   rotation: 0,
   flipX: false,
   flipY: false,
   ...DEFAULT_COLOR,
+  masks: [],
 };
 export const pageKey = (id: string, index: number) => `${id}:${index}`;
 interface History {
@@ -18,12 +22,18 @@ interface History {
   future: PageEdit[];
 }
 interface EditState {
+  selection: Record<string, string | null>;
+  hidden: Record<string, boolean>;
+  maskFill: string;
+  selectMask: (key: string, id: string | null) => void;
+  toggleMasks: (key: string) => void;
+  setMaskFill: (fill: string) => void;
   displayZoom: Record<string, number>;
   reportZoom: (key: string, zoom: number) => void;
   pages: Record<string, PageEdit>;
   views: Record<string, Viewport>;
   history: Record<string, History>;
-  tool: 'inspect' | 'hand';
+  tool: 'inspect' | 'hand' | 'mask' | 'select';
   update: (key: string, patch: Partial<PageEdit>, record?: boolean) => void;
   commit: (key: string, before: PageEdit) => void;
   undo: (key: string) => void;
@@ -36,6 +46,16 @@ const same = (a: PageEdit, b: PageEdit) =>
   JSON.stringify(a) === JSON.stringify(b);
 export const isEdited = (edit: PageEdit) => !same(edit, DEFAULT_EDIT);
 export const useEditStore = create<EditState>((set) => ({
+  selection: {},
+  hidden: {},
+  maskFill: '#000000',
+  selectMask: (key, id) =>
+    set((state) => ({ selection: { ...state.selection, [key]: id } })),
+  toggleMasks: (key) =>
+    set((state) => ({
+      hidden: { ...state.hidden, [key]: !state.hidden[key] },
+    })),
+  setMaskFill: (maskFill) => set({ maskFill }),
   displayZoom: {},
   reportZoom: (key, zoom) =>
     set((state) =>
@@ -122,6 +142,8 @@ export const useEditStore = create<EditState>((set) => ({
         );
       return {
         pages: keep(state.pages),
+        selection: keep(state.selection),
+        hidden: keep(state.hidden),
         displayZoom: keep(state.displayZoom),
         views: keep(state.views),
         history: keep(state.history),

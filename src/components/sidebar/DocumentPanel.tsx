@@ -39,6 +39,19 @@ function Thumbnail({
         const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
         transformPixels(pixels.data, edit);
         context.putImageData(pixels, 0, 0);
+        const sx = page.canvas.width / page.metadata.width,
+          sy = page.canvas.height / page.metadata.height;
+        context.setTransform(...geometry.matrix);
+        for (const mask of edit.masks) {
+          context.fillStyle = mask.fill;
+          context.fillRect(
+            mask.x * sx,
+            mask.y * sy,
+            mask.width * sx,
+            mask.height * sy,
+          );
+        }
+        context.resetTransform();
       }
     }
   }, [page, edit]);

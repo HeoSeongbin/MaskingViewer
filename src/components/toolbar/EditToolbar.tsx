@@ -88,6 +88,18 @@ export function EditToolbar({
       <div className="edit-toolbar" role="toolbar" aria-label="문서 편집 도구">
         <div className="tool-group">
           <button
+            aria-pressed={tool === 'select'}
+            onClick={() => useEditStore.getState().setTool('select')}
+          >
+            선택
+          </button>
+          <button
+            aria-pressed={tool === 'mask'}
+            onClick={() => useEditStore.getState().setTool('mask')}
+          >
+            사각형 마스킹
+          </button>
+          <button
             aria-pressed={tool === 'inspect'}
             onClick={() => useEditStore.getState().setTool('inspect')}
             title="원본 좌표 확인"
@@ -232,7 +244,9 @@ export function EditToolbar({
         >
           색상 복원
         </button>
-        <button onClick={() => update(DEFAULT_EDIT)}>전체 편집 복원</button>
+        <button onClick={() => update({ ...DEFAULT_EDIT, masks: edit.masks })}>
+          전체 편집 복원
+        </button>
       </div>
     </>
   );

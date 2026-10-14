@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Stage, Layer, Group, Image as KonvaImage } from 'react-konva';
+import {
+  Stage,
+  Layer,
+  Group,
+  Rect,
+  Circle,
+  Image as KonvaImage,
+} from 'react-konva';
+import { useMaskGesture } from '../../hooks/useMaskGesture';
+import { maskCorners } from '../../core/masking/MaskEngine';
 import { useRenderedPage } from '../../hooks/useRenderedPage';
 import { useColorPreview } from '../../hooks/useColorPreview';
 import type { DocumentModel } from '../../core/document/DocumentModel';
@@ -33,6 +42,13 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
   const [pointer, setPointer] = useState<Point | null>(null);
   const source = page?.metadata ?? { width: 1, height: 1 };
   const display = displayGeometry(source, edit, view, size);
+  const masking = useMaskGesture(
+    key,
+    source,
+    size,
+    display.matrix,
+    Boolean(preview.canvas && !error),
+  );
   useEffect(() => {
     if (page) useEditStore.getState().reportZoom(key, display.zoom);
   }, [key, display.zoom, page]);
@@ -72,6 +88,7 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
     if (!element || !page) return;
     const wheel = (event: WheelEvent) => {
       event.preventDefault();
+      if (masking.active()) return;
       const factor =
         event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? size.height : 1;
       if (event.ctrlKey)
@@ -118,6 +135,7 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
         aria-busy={!errorMessage && (!page || preview.pending)}
         tabIndex={0}
         onPointerDown={(event) => {
+          if (masking.down(event)) return;
           if (tool !== 'hand' || !page || event.button !== 0) return;
           const point = screenToStage(
             { x: event.clientX, y: event.clientY },
@@ -139,6 +157,7 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
             size,
           );
           setPointer(point);
+          masking.move(event);
           const start = drag.current;
           if (start && start.pointerId === event.pointerId)
             panTo({
@@ -147,14 +166,17 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
             });
         }}
         onPointerUp={(event) => {
+          masking.up(event);
           drag.current = null;
           if (event.currentTarget.hasPointerCapture(event.pointerId))
             event.currentTarget.releasePointerCapture(event.pointerId);
         }}
         onPointerCancel={() => {
+          masking.cancel();
           drag.current = null;
         }}
         onLostPointerCapture={() => {
+          masking.cancel();
           drag.current = null;
         }}
         onPointerLeave={() => setPointer(null)}
@@ -205,6 +227,43 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
                   width={source.width}
                   height={source.height}
                 />
+                {!masking.hidden &&
+                  masking.masks.map((mask) => (
+                    <Group key={mask.id}>
+                      <Rect
+                        x={mask.x}
+                        y={mask.y}
+                        width={mask.width}
+                        height={mask.height}
+                        fill={mask.fill}
+                      />
+                      {tool === 'select' && mask.id === masking.selectedId && (
+                        <>
+                          <Rect
+                            x={mask.x}
+                            y={mask.y}
+                            width={mask.width}
+                            height={mask.height}
+                            stroke="#00b8ff"
+                            strokeWidth={2 / display.zoom}
+                          />
+                          {Object.entries(maskCorners(mask)).map(
+                            ([corner, point]) => (
+                              <Circle
+                                key={corner}
+                                x={point.x}
+                                y={point.y}
+                                radius={5 / display.zoom}
+                                fill="#ffffff"
+                                stroke="#007db3"
+                                strokeWidth={1 / display.zoom}
+                              />
+                            ),
+                          )}
+                        </>
+                      )}
+                    </Group>
+                  ))}
               </Group>
             </Layer>
           </Stage>
@@ -222,6 +281,11 @@ export function DocumentViewer({ document }: { document: DocumentModel }) {
               ? ` · 원본 좌표 ${geometryPoint.x.toFixed(1)}, ${geometryPoint.y.toFixed(1)}`
               : ''}
           </span>
+        )}
+        {masking.error && (
+          <p role="alert" className="mask-error">
+            {masking.error}
+          </p>
         )}
       </div>
     </>
