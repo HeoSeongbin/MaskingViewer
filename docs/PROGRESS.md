@@ -248,3 +248,10 @@ Linux CI 표본: PDF 120페이지 20.292초/875,323bytes, TIFF 120페이지 1.24
 - 사용자 요청에 따라 PROJECT.md의 프로젝트 목적·Phase 7·기술 문서 표현과 README 링크를 정리하고 전용 소개 문서를 제거했다.
 - 기존 기능 명세, 사용 안내, 아키텍처, 배포/검증 기록 및 실제 화면은 유지한다. 앱 코드와 의존성은 변경하지 않았다.
 - 이번 문서 변경 검증: 관련 표현/삭제 문서 참조 검색 결과 0건, TypeScript 및 Prettier 검사, /MaskingViewer/ production build, git diff --check 통과. 첫 sandbox build는 Worker 파일 realpath EPERM으로 실패했고 일반 권한 재실행에서 성공했다. 문서만 수정하여 단위/E2E는 재실행하지 않았다. 커밋·푸시는 진행하지 않았다.
+
+## README 기술 선택 설명 보강 (2026-10-16)
+
+- README의 기술 스택을 언어·실행 기반, 화면·상태·문서 처리, 테스트·품질·배포로 나누고 각 항목의 선택 이유와 실제 구현에서 얻은 효과를 추가했다.
+- package.json, TypeScript/Vite/ESLint 설정, 상태 저장소, Worker와 출력 검증 코드를 대조했다. 브라우저 API와 라이브러리, 입력 렌더링과 출력 생성, 자체 TIFF 인코더와 UTIF 검증의 역할을 구분했다.
+- 앱 코드·의존성·아키텍처 변경은 없다. 따라서 DECISIONS에는 새로운 기술 결정을 추가하지 않았다.
+- TypeScript, ESLint, Vitest 13파일 164개 및 /MaskingViewer/ production build 통과. 문서만 변경하여 E2E·원격 배포 검사는 재실행하지 않았다. 커밋·푸시는 진행하지 않았다.
